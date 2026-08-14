@@ -50,7 +50,9 @@
     "test:checkin": "AI_LIMITS_RELAXED=1 node --test test/checkin-loop.test.mjs && AI_LIMITS_RELAXED=1 node --import ./test/checkin-reply.setup.mjs --test test/checkin-reply.test.mjs && AI_LIMITS_RELAXED=1 node --test test/checkin-timing.test.mjs",
     "test:dream": "AI_LIMITS_RELAXED=1 node --import ./test/dream-bootstrap.setup.mjs --test test/dream-bootstrap.test.mjs",
     "test:app": "node test/dart-sanity.mjs && node --test test/ui-scale.test.mjs",
-    "ui:scale": "node scripts/scale-ui.mjs"
+    "ui:scale": "node scripts/scale-ui.mjs",
+    "db:setup": "node scripts/db-setup.mjs",
+    "db:reset": "npx prisma db push --force-reset --accept-data-loss && npx prisma generate"
   },
   "prisma": {
     "schema": "prisma/schema.prisma",

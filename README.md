@@ -63,11 +63,14 @@ d6d8s/
 
 ```bash
 cd bal-app-code/clan-app
-cp .env.example .env        # وعبي القيم (DATABASE_URL, REDIS_URL, JWT...)
+cp .env.example .env        # وعبي القيم (GEMINI_API_KEY على الأقل)
 npm install
-npm run prisma:generate
+
 docker compose -f docker-compose.dev.yml up -d   # postgres + redis
-npm run dev                 # أو node src/server.js
+npm run db:setup            # يبني الجداول ويولّد عميل Prisma
+
+npm run dev                 # تيرمينال ١ — السيرفر
+npm run worker              # تيرمينال ٢ — الجوبس
 ```
 
 - REST API على `:3000` (Socket.io على نفس المنفذ)
