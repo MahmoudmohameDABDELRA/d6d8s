@@ -1,0 +1,24 @@
+node_modules/
+
+# Keep environment variables out of version control
+.env
+.env.*
+!.env.example
+
+/src/generated/prisma
+prisma/migrations/dev.db*
+
+logs/
+*.log
+npm-debug.log*
+
+.DS_Store
+.idea/
+.vscode/
+coverage/
+dist/
+
+# ── تنظيف الأمان: ملفات حساسة/فضلات لا تدخل Git أبداً ──
+backups/
+*.rdb
+appendonly.aof

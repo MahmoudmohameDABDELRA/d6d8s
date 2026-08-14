@@ -1,0 +1,34 @@
+# ─── Node.js / npm ───
+node_modules/
+npm-debug.log*
+yarn-error.log*
+package-lock.json.tmp
+
+# ─── بيئة التشغيل — الأسرار عمرها ما تدخل Git ───
+.env
+.env.*
+!.env.example
+
+# ─── Flutter / Dart ───
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+build/
+*.iml
+.packages
+.pub-cache/
+.pub/
+
+# ─── IDE / OS ───
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# ─── لوغات / مولّدات ───
+logs/
+*.log
+coverage/
+dist/
+*.rdb
+appendonly.aof

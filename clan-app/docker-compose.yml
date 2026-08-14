@@ -1,0 +1,157 @@
+version: '3.9'
+
+# ════════════════════════════════════════════════════════════════════════════════
+#  Clan App — Full Stack Cloud Orchestration (Docker Compose)
+# ════════════════════════════════════════════════════════════════════════════════
+#
+#  الخدمات:
+#    1. postgres: قاعدة بيانات PostgreSQL 17 مع التخزين الدائم
+#    2. pgbouncer: مجمع اتصالات ذكي بوضع Transaction لخدمة 10,000 مستخدم
+#    3. redis: كاش الذاكرة وقفل الغرف الموزع وPub/Sub للسوكت
+#    4. api: خادم الـ REST API الأساسي (المنفذ 3000)
+#    5. game-server: خادم الألعاب التنافسية والسوكت المنفصل (المنفذ 3001)
+#    6. worker: معالج الطوابير والمهام الخلفية المستقل (BullMQ Worker)
+# ════════════════════════════════════════════════════════════════════════════════
+
+services:
+  # ── 1. PostgreSQL Database ──
+  postgres:
+    image: postgres:17-alpine
+    container_name: clan_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${PG_USER:-root}
+      POSTGRES_PASSWORD: ${PG_PASSWORD:-secretpassword}
+      POSTGRES_DB: ${PG_DATABASE:-clan_app_db}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./prisma/migrations/20260808_declarative_partitioning/migration.sql:/docker-entrypoint-initdb.d/01_partitioning.sql:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U root -d clan_app_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - clan_net
+
+  # ── 2. PgBouncer Connection Pooler ──
+  pgbouncer:
+    image: edoburu/pgbouncer:v1.22.1
+    container_name: clan_pgbouncer
+    restart: unless-stopped
+    environment:
+      DB_USER: ${PG_USER:-root}
+      DB_PASSWORD: ${PG_PASSWORD:-secretpassword}
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: clan_app_db
+      POOL_MODE: transaction
+      DEFAULT_POOL_SIZE: 25
+      MAX_CLIENT_CONN: 10000
+      MAX_DB_CONNECTIONS: 60
+      AUTH_TYPE: plain
+    ports:
+      - "6432:6432"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - clan_net
+
+  # ── 3. Redis In-Memory & Socket Broker ──
+  redis:
+    image: redis:7-alpine
+    container_name: clan_redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "512mb", "--maxmemory-policy", "allkeys-lru"]
+    volumes:
+      - redisdata:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - clan_net
+
+  # ── 4. Main REST API Server ──
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: clan_api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://${PG_USER:-root}:${PG_PASSWORD:-secretpassword}@pgbouncer:6432/clan_app_db?pgbouncer=true
+      REDIS_URL: redis://redis:6379
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://localhost:5173}
+      ENABLE_EMAIL_AUTH: ${ENABLE_EMAIL_AUTH:-false}
+    ports:
+      - "3000:3000"
+    depends_on:
+      pgbouncer:
+        condition: service_started
+      redis:
+        condition: service_healthy
+    networks:
+      - clan_net
+
+  # ── 5. Isolated Game & Realtime Server ──
+  game-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: clan_game_server
+    restart: unless-stopped
+    command: ["node", "src/game-server.js"]
+    environment:
+      NODE_ENV: production
+      GAME_PORT: 3001
+      DATABASE_URL: postgresql://${PG_USER:-root}:${PG_PASSWORD:-secretpassword}@pgbouncer:6432/clan_app_db?pgbouncer=true
+      REDIS_URL: redis://redis:6379
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+    ports:
+      - "3001:3001"
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - clan_net
+
+  # ── 6. BullMQ Background Worker ──
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: clan_worker
+    restart: unless-stopped
+    command: ["node", "src/queues/worker.js"]
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${PG_USER:-root}:${PG_PASSWORD:-secretpassword}@pgbouncer:6432/clan_app_db?pgbouncer=true
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      pgbouncer:
+        condition: service_started
+      redis:
+        condition: service_healthy
+    networks:
+      - clan_net
+
+volumes:
+  pgdata:
+    driver: local
+  redisdata:
+    driver: local
+
+networks:
+  clan_net:
+    driver: bridge

@@ -1,0 +1,2127 @@
+// ════════════════════════════════════════════════════════════
+//  CLAN APP — المخطط الكامل
+//  مبني على القرارات المعتمدة في: القرارات-المعتمدة.md
+// ════════════════════════════════════════════════════════════
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ════════════════════════════════════════════════════════════
+//  ENUMS
+// ════════════════════════════════════════════════════════════
+
+/// المجالات الأم الستة — كل مجال له عشيرة عامة واحدة
+enum Domain {
+  STUDY
+  BUSINESS
+  TECH
+  HEALTH
+  CREATIVE
+  SELF_GROWTH
+}
+
+/// مزوّد المصادقة — EMAIL محفوظ كاحتياطي معطَّل
+enum AuthProvider {
+  GOOGLE
+  EMAIL
+}
+
+enum ClanType {
+  GLOBAL
+  PRIVATE
+}
+
+/// لا يوجد ADMIN عمداً — ترقية عضو تعني أنه يملك صلاحيات في
+/// عشيرتين (عشيرته + هذه)، وهذا يخالف قاعدة "عشيرة واحدة لكل مالك".
+/// دور المستخدم على مستوى المنصّة — لا داخل العشيرة.
+///
+/// ⚠️ كان غائباً تماماً، فبقيت مسارات الكتابة على الفيديو
+///    مفتوحة لأي حساب مسجَّل. أي مستخدم كان يستطيع نشر محتوى
+///    يراه الجميع أو حذفه.
+enum PlatformRole {
+  USER
+  /// وصول كامل — يُمنح يدوياً من القاعدة فقط، لا عبر أي مسار
+  ADMIN
+}
+
+enum ClanRole {
+  LEADER
+  MEMBER
+}
+
+enum SessionType {
+  SOLO
+  PULSE
+  CHALLENGE
+}
+
+enum SessionStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+  FAILED // خرق الوضع الصارم
+}
+
+/// أطوار دورة النبض — 120 دقيقة
+enum PulsePhase {
+  LOBBY // 0-5
+  FOCUS_1 // 5-35
+  BREAK_1 // 35-45
+  FOCUS_2 // 45-75
+  BREAK_2 // 75-85
+  FOCUS_3 // 85-115
+  BREAK_3 // 115-120
+}
+
+enum TaskPriority {
+  CRITICAL // 🔴 40 شرارة
+  GROWTH // 🔵 30 شرارة
+  QUICK // 🟢 10 شرارات
+}
+
+enum TaskAction {
+  CREATED
+  UPDATED
+  COMPLETED
+  REOPENED
+  RESCHEDULED
+  DELETED
+}
+
+/// مصادر حركة الشرارات — موجب = كسب، سالب = صرف
+enum SparkSource {
+  FOCUS_SESSION
+  TASK_COMPLETED
+  ACHIEVEMENT_BONUS
+  PULSE_MULTIPLIER
+  VIDEO_PURCHASE
+  AUDIO_PURCHASE
+  AUDIO_SLOT_UNLOCK
+  REFERRAL_BONUS
+  VENTING_CATHARSIS
+  WELCOME_BACK_BONUS
+  SHOP_PURCHASE
+  ADMIN_ADJUSTMENT
+}
+
+enum MoodState {
+  ENERGIZED   /// 🔥 مستعد ومتحمس
+  TIRED       /// 🥱 تعبان ومرهق
+  STRESSED    /// 🤯 مضغوط ومشتت
+  FRUSTRATED  /// 😔 محبط ومخنوق
+}
+
+enum ReferralStatus {
+  PENDING
+  COMPLETED
+  REWARDED
+}
+
+enum ReferralRewardType {
+  SPARKS_AND_AI
+  AUDIO_UNLOCK
+  DOPAMINE_VIDEO
+}
+
+enum AudioCategory {
+  LOFI
+  WHITE_NOISE
+  NATURE
+  BINAURAL
+  AMBIENT
+}
+
+enum AchievementCategory {
+  FOCUS
+  STREAK
+  TRIBE
+  REFLECTION
+  EARLY_BIRD
+}
+
+enum AchievementTier {
+  BRONZE
+  SILVER
+  GOLD
+}
+
+enum TitleTier {
+  /// الألقاب الأسطورية الثلاثة النادرة صاحبة هيبة الدخول
+  MYTHIC
+  LEGENDARY
+  ELITE
+}
+
+enum TitleAuraEffect {
+  /// لهب قرمزي متوهج (وحش اليوم الكامل)
+  CRIMSON_SOLAR_FLAME
+  /// صواعق كهربائية زرقاء (المحارب الفولاذي)
+  IRON_LIGHTNING_STORM
+  /// تاج الذهب والسيادة (الفاتح الأسطوري)
+  GOLDEN_CONQUEROR_CROWN
+  NONE
+}
+
+enum ConversationType {
+  DIRECT
+  CLAN
+}
+
+enum RequestStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+enum PrivacyLevel {
+  EVERYONE
+  REQUESTS_ONLY
+  CLAN_ONLY
+}
+
+enum FollowStatus {
+  PENDING
+  ACCEPTED
+}
+
+enum ReportReason {
+  SPAM
+  HARASSMENT
+  INAPPROPRIATE
+  CHEATING
+  OTHER
+}
+
+enum ReportTargetType {
+  CHAT_MESSAGE
+  CLAN_MESSAGE
+  USER_PROFILE
+  COMMENT
+  OTHER
+}
+
+enum ReportStatus {
+  PENDING
+  RESOLVED
+  DISMISSED
+}
+
+enum ExpenseCategory {
+  SALARY
+  SERVERS_CLOUD
+  AI_API_TOKENS
+  MARKETING_ADS
+  PAYMENT_GATEWAY_FEES
+  SOFTWARE_TOOLS
+  LEGAL_OFFICE
+  OTHER
+}
+
+enum RevenueSource {
+  SUBSCRIPTION
+  SPARKS_PACK
+  AUDIO_STORE
+  SPONSORSHIP
+  DONATION_GRANT
+  OTHER
+}
+
+enum DmPrivacy {
+  EVERYONE
+  FOLLOWERS_ONLY
+  CLAN_ONLY
+  NOBODY
+}
+
+enum SubscriptionPlan {
+  /// مجانية — 3 رسائل/يوم · نبض كل 5 ساعات
+  FREE
+  /// عادية — 20 رسالة/يوم · نبض كل ساعتين
+  BASIC
+  /// برو — 50 رسالة/يوم · نبض كل ساعة
+  PRO
+  /// هاي — بلا حد · نبض كل 30 دقيقة
+  HIGH
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+  PAST_DUE
+}
+
+enum AiMode {
+  COMPANION // المرافق الحي — يقرأ السياق
+  ASSISTANT // المساعد المفتوح — بلا سياق
+}
+
+enum AiRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+enum NotificationType {
+  AI_PROACTIVE
+  PULSE_STARTING
+  PULSE_RESERVED
+  TASK_REMINDER
+  TASK_OVERDUE
+  TASK_CHECKIN
+  FOCUS_CHALLENGE
+  ACHIEVEMENT_UNLOCKED
+  CLAN_MESSAGE
+  DIRECT_MESSAGE
+  MESSAGE_REQUEST
+  ENCOURAGEMENT
+  ALARM
+  SYSTEM
+}
+
+enum DevicePlatform {
+  IOS
+  ANDROID
+}
+
+enum JournalInputSource {
+  TEXT
+  VOICE
+}
+
+// ════════════════════════════════════════════════════════════
+//  المستخدم والمصادقة
+// ════════════════════════════════════════════════════════════
+
+model User {
+  id       String  @id @default(uuid())
+  username String  @unique
+  email    String  @unique
+
+  /// ⚠️ اختياري: مستخدمو Google لا يملكون كلمة مرور.
+  /// المسار محفوظ ومعطَّل — يُفعَّل بـ ENABLE_EMAIL_AUTH=true
+  password String?
+
+  /// مزوّد المصادقة
+  authProvider AuthProvider @default(GOOGLE)
+  /// معرّف حساب جوجل (sub)
+  googleId     String?      @unique
+
+  /// المجال الأم — يحدد العشيرة التلقائية.
+  /// اختياري في المخطط لأن جوجل لا يوفّره: يُسأل عنه في شاشة الإكمال
+  /// بعد أول دخول. الخادم يمنع استخدام التطبيق قبل تعيينه.
+  domain    Domain?
+  /// التخصص الفرعي — اختياري، للبحث والفلترة
+  specialty String?
+
+  /// اهتمامات المستخدم (2 كحد أقصى) — تحدد عشائره العامة
+  /// (قرار المالك: يختار 2 في التسجيل، ويقدر يغيّرهم لاحقاً)
+  interests Domain[] @default([])
+
+  /// اسم الرفيق (الـ AI) — يختاره المستخدم بنفسه: "بماذا تريد أن تناديني؟"
+  /// يُحفظ هنا ويُحقن في سياق الـ AI — فيعرف الرفيق اسمه دائماً
+  companionName String?
+  /// هل أكمل المستخدم بياناته (اختار مجاله)؟
+  onboarded Boolean @default(false)
+
+  profileImage String?
+  bio          String?
+
+  // ── الشرارات ──
+  /// الرصيد القابل للصرف (ينقص بالشراء)
+  sparksBalance     Int @default(0)
+  /// الإجمالي التراكمي (لا ينقص أبداً — للأوسمة)
+  totalSparksEarned Int @default(0)
+
+  // ── إحصائيات ──
+  totalFocusMin Int @default(0)
+  currentStreak Int @default(0)
+  longestStreak Int @default(0)
+  /// آخر يوم نشاط بتوقيت المستخدم المحلي
+  lastActiveDate DateTime? @db.Date
+
+  // ── إعدادات ──
+  /// منطقة المستخدم الزمنية — ضرورية لحساب الستريك بشكل صحيح
+  timezone     String       @default("Africa/Cairo")
+  privacyLevel PrivacyLevel @default(REQUESTS_ONLY)
+  /// أفضل 3 أوسمة تُعرض على البروفايل (معرّفات UserAchievement)
+  showcaseIds  String[]     @default([])
+  /// قفل قسم المذكرات
+  journalLocked Boolean @default(false)
+  /// رصيد الطوارئ المستخدم اليوم (يُصفَّر يومياً)
+  emergencyUsedToday Int      @default(0)
+  emergencyResetDate DateTime? @db.Date
+
+  /// ⚠️ لا يوجد مسار يرفع الدور — يُضبط من القاعدة يدوياً.
+  ///    ترقية عبر API تعني أن ثغرة واحدة تمنح صلاحية كاملة.
+  role       PlatformRole @default(USER)
+  isBanned   Boolean   @default(false)
+  isVerified Boolean   @default(false)
+  lastSeen   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // ── العلاقات ──
+  refreshTokens     RefreshToken[]
+  devices           Device[]
+  clanMemberships   ClanMember[]
+  ledClans          Clan[]                    @relation("ClanLeader")
+  clanBans          ClanBan[]
+  wakeLogs          WakeLog[]
+  wakeChallenges    WakeChallengeParticipant[]
+  hostedGames       GameRoom[]        @relation("GameHost")
+  gamePlays         GameRoomPlayer[]
+  sketches          DrawingSketch[]
+  focusSessions     FocusSession[]
+  reservations      PulseReservation[]
+  tasks             Task[]
+  journalEntries    JournalEntry[]
+  goals             Goal[]
+  alarms            BattleAlarm[]
+  sparkTx           SparkTransaction[]
+  achievements      UserAchievement[]
+  encouragementsOut Encouragement[]           @relation("EncourageFrom")
+  encouragementsIn  Encouragement[]           @relation("EncourageTo")
+  conversations     ConversationParticipant[]
+  requestsSent      MessageRequest[]          @relation("ReqFrom")
+  requestsReceived  MessageRequest[]          @relation("ReqTo")
+  blocking          BlockedUser[]             @relation("Blocker")
+  blockedBy         BlockedUser[]             @relation("Blocked")
+
+  /// الصداقات (نظام انستقرام — الصداقة شرط المراسلة)
+  friendshipsSent     Friendship[] @relation("FriendFrom")
+  friendshipsReceived Friendship[] @relation("FriendTo")
+  /// الكتم — كتم إشعارات شخص معين
+  mutedUsers  MutedUser[] @relation("Muter")
+  mutedBy     MutedUser[] @relation("MutedTarget")
+
+  /// التحديات الجماعية للتركيز — التي أنشأها وشارك فيها
+  hostedChallenges FocusChallenge[] @relation("Hosted")
+  challengeParticipations FocusChallengeParticipant[]
+  videoPurchases    VideoPurchase[]
+  aiConversations   AiConversation[]
+  aiPulses          AiPulse[]
+  notes             Note[]
+  aiPulseEvents     AiPulseEvent[]
+  aiContextSyncs    AiContextSync[]
+  aiUsage           AiUsageLog[]
+  subscription      Subscription?
+  payments          Payment[]
+  notifications     Notification[]
+  unlockedAudioSlots Int            @default(1)
+  audioPurchases    AudioPurchase[]
+
+  // ── الخصوصية وشبكة التواصل والمتابعة ──
+  isPrivateAccount  Boolean         @default(false)
+  showLastSeen      Boolean         @default(true)
+  showStreak        Boolean         @default(true)
+  showFocusHours    Boolean         @default(true)
+  dmPrivacy         DmPrivacy       @default(EVERYONE)
+  customStatus      String?
+  statusEmoji       String?
+  socialLinks       Json?           /// { github, linkedin, twitter, website }
+  followersCount    Int             @default(0)
+  followingCount    Int             @default(0)
+
+  following         Follow[]        @relation("UserFollowing")
+  followers         Follow[]        @relation("UserFollowers")
+  reportsMade       UserReport[]    @relation("ReportsMade")
+  reportsReceived   UserReport[]    @relation("ReportsReceived")
+
+  // ── الجانب الإنساني وحماية الستريك ──
+  shieldsRemaining    Int             @default(2)   /// درعان مجانيان شهرياً
+  shieldsUsedThisMonth Int            @default(0)
+  shieldActiveDate    DateTime?       @db.Date
+  dailyMoodLogs       DailyMoodLog[]
+
+  // ── الإحالة والمكافآت ──
+  referralCode      String?         @unique
+  referralCount     Int             @default(0)
+  bonusAiMessages   Int             @default(0)
+  referredById      String?
+  referredBy        User?           @relation("UserReferrals", fields: [referredById], references: [id], onDelete: SetNull)
+  referrals         User[]          @relation("UserReferrals")
+  referralsGiven    Referral[]      @relation("ReferrerRel")
+  referralReceived  Referral?       @relation("ReferredRel")
+  dailyInsightLogs  DailyInsightLog[]
+
+  // ── الألقاب الأسطورية والرتب ──
+  equippedTitleId   String?
+  equippedTitle     Title?          @relation("EquippedTitle", fields: [equippedTitleId], references: [id], onDelete: SetNull)
+  titles            UserTitle[]
+
+  @@index([domain])
+  @@index([specialty])
+  @@index([username])
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  /// بصمة SHA-256 لا التوكن نفسه
+  token     String    @unique
+  userId    String
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+/// أجهزة المستخدم — لإرسال إشعارات FCM
+/// ⚠️ غير مُنفَّذ — صفر مرجع في الشيفرة (تحقّقنا بـ grep).
+///
+///  ⚠️ وجوده يوحي بدعم الإشعارات الفورية **وهو غير موجود**:
+///     لا FCM ولا APNs في المشروع. الإشعارات تُخزَّن في جدول
+///     Notification وتُقرأ عند فتح التطبيق فقط.
+///
+///  مخطَّط له: تسجيل رموز الأجهزة لإرسال Push.
+model Device {
+  id        String         @id @default(uuid())
+  userId    String
+  fcmToken  String         @unique
+  platform  DevicePlatform
+  /// آخر مرة استُخدم فيها — لتنظيف الأجهزة الميتة
+  lastUsed  DateTime       @default(now())
+  createdAt DateTime       @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ════════════════════════════════════════════════════════════
+//  العشائر
+// ════════════════════════════════════════════════════════════
+
+model Clan {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  icon        String?
+  type        ClanType
+  /// المجال — للعشائر العامة فقط
+  category    Domain?
+  inviteCode  String?  @unique
+  leaderId    String?
+  /// للعشائر الخاصة فقط — العامة بلا حد
+  maxMembers  Int?     @default(50)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  leader   User?         @relation("ClanLeader", fields: [leaderId], references: [id], onDelete: SetNull)
+  members  ClanMember[]
+  invites  ClanInvite[]
+  bans     ClanBan[]
+  wakeChallenges WakeChallenge[]
+  conversation Conversation?
+
+  /// عشيرة عامة واحدة لكل مجال
+  @@unique([type, category])
+  @@index([leaderId])
+  @@index([type])
+  focusChallenges FocusChallenge[]
+}
+
+model ClanMember {
+  id       String   @id @default(uuid())
+  userId   String
+  clanId   String
+  role     ClanRole @default(MEMBER)
+  joinedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clan Clan @relation(fields: [clanId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, clanId])
+  @@index([clanId])
+  @@index([userId])
+}
+
+/// الأعضاء المطرودون — يمنعهم من العودة بنفس كود الدعوة
+model ClanBan {
+  id        String   @id @default(uuid())
+  clanId    String
+  userId    String
+  reason    String?
+  bannedAt  DateTime @default(now())
+
+  clan Clan @relation(fields: [clanId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([clanId, userId])
+  @@index([clanId])
+}
+
+/// ⚠️ غير مُنفَّذ — صفر مرجع في الشيفرة (تحقّقنا بـ grep).
+///
+///  الانضمام للعشيرة الخاصة يتم حالياً بـ `inviteCode` على
+///  جدول Clan مباشرةً، لا بدعوة موجّهة لشخص بعينه.
+///
+///  ⚠️ لا تبنِ عليه قبل كتابة مساراته: الجدول موجود ولا شيء
+///     يملؤه، فأي قراءة منه ترجع فارغاً دائماً.
+///
+///  مخطَّط له: دعوة شخص محدد بصلاحية ومهلة.
+model ClanInvite {
+  id         String    @id @default(uuid())
+  clanId     String
+  inviteCode String    @unique
+  expiresAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  clan Clan @relation(fields: [clanId], references: [id], onDelete: Cascade)
+
+  @@index([clanId])
+}
+
+/// التشجيعات بين الأعضاء — [👏 شد حيلك يا بطل]
+model Encouragement {
+  id         String   @id @default(uuid())
+  fromUserId String
+  toUserId   String
+  /// سياق التشجيع: معرّف مهمة أو جلسة أو وسام
+  contextId  String?
+  createdAt  DateTime @default(now())
+
+  fromUser User @relation("EncourageFrom", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser   User @relation("EncourageTo", fields: [toUserId], references: [id], onDelete: Cascade)
+
+  @@index([fromUserId])
+  @@index([toUserId])
+}
+
+// ════════════════════════════════════════════════════════════
+//  النبض الجماعي — دورة 120 دقيقة
+// ════════════════════════════════════════════════════════════
+
+/// نسخة فعلية من جلسة النبض — تُنشأ عند أول حجز
+/// الأطوار محسوبة رياضياً، هذا السجل فقط لربط الحجوزات والمشاركين
+model PulseSession {
+  id        String   @id @default(uuid())
+  /// بداية الدورة بتوقيت UTC — كل ساعتين تماماً
+  startTime DateTime @unique
+  endTime   DateTime
+  createdAt DateTime @default(now())
+
+  reservations  PulseReservation[]
+  focusSessions FocusSession[]
+
+  @@index([startTime])
+}
+
+/// حجز مكان في جلسة قادمة — من اللوبي فقط
+model PulseReservation {
+  id             String    @id @default(uuid())
+  userId         String
+  pulseSessionId String
+  reservedAt     DateTime  @default(now())
+  /// هل حضر فعلاً؟
+  attended       Boolean   @default(false)
+  attendedAt     DateTime?
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pulseSession PulseSession @relation(fields: [pulseSessionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, pulseSessionId])
+  @@index([pulseSessionId])
+}
+
+// ════════════════════════════════════════════════════════════
+//  جلسات التركيز
+// ════════════════════════════════════════════════════════════
+
+/// نتيجة اختبار كشف التشتت
+enum FocusCheckResult {
+  PENDING
+  PASSED
+  FAILED
+  EMERGENCY
+}
+
+/// اختبار فجائي أثناء الجلسة — سؤال بسيط بمهلة قصيرة
+model FocusCheck {
+  id        String           @id @default(uuid())
+  sessionId String
+  userId    String
+  question  String
+  answer    Int
+  /// الدقيقة التي ظهر فيها منذ بدء الجلسة
+  atMinute  Int
+  result    FocusCheckResult @default(PENDING)
+  /// زمن الاستجابة بالمللي ثانية
+  responseMs Int?
+  shownAt   DateTime         @default(now())
+  answeredAt DateTime?
+
+  session FocusSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([userId, shownAt])
+}
+
+model FocusSession {
+  id     String @id @default(uuid())
+  userId String
+
+  type   SessionType   @default(SOLO)
+  status SessionStatus @default(ACTIVE)
+
+  /// المدة المخططة
+  plannedMin Int
+  /// ما أبلغ عنه العميل (قد يكون أوفلاين)
+  clientReportedMin Int?
+
+  /// ── الدورة المخصصة (رؤية «بال»): تركيز + راحة + تكرار ──
+  /// مدة الراحة بين الدورات (1-10 صارم — القاعدة ترفض الأكثر)
+  restMin Int?
+  /// عدد الدورات (تركيز + راحة = دورة، وآخر دورة بلا راحة = لوبي)
+  cycles Int?
+  /// إجمالي دقائق التركيز الفعلي (focusMin × cycles) — تُحسب الشرارات منه
+  totalFocusMin Int?
+  /// ما يعتمده الخادم بعد التحقق — الأساس لحساب الشرارات
+  serverVerifiedMin Int  @default(0)
+
+  earnedSparks Int   @default(0)
+  multiplier   Float @default(1.0)
+
+  // ── الوضع الصارم ──
+  strictMode Boolean @default(false)
+  /// عدد مرات الخروج من التطبيق
+  violations Int     @default(0)
+
+  /// هل احتُسبت أوفلاين؟ (للمراجعة)
+  wasOffline Boolean @default(false)
+
+  startedAt DateTime  @default(now())
+  endedAt   DateTime?
+
+  taskId         String?
+  pulseSessionId String?
+
+  /// عدد اختبارات التشتت التي فشل فيها
+  failedChecks Int @default(0)
+  /// رصيد الطوارئ المستخدم في هذه الجلسة
+  emergencyUsed Int @default(0)
+
+  /// المقطع الصوتي المشغّل أثناء جلسة التركيز (للويدجت والتحكم بالوسائط)
+  audioTrackId String?
+  audioTitle   String?
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task         Task?         @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  focusChecks  FocusCheck[]
+  pulseSession PulseSession? @relation(fields: [pulseSessionId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([status])
+  @@index([userId, startedAt])
+  @@index([pulseSessionId])
+  @@index([taskId])
+}
+
+// ════════════════════════════════════════════════════════════
+//  المهام
+// ════════════════════════════════════════════════════════════
+
+model Task {
+  id          String  @id @default(uuid())
+  userId      String
+  title       String
+  description String?
+
+  priority     TaskPriority @default(GROWTH)
+  estimatedMin Int?
+  earnedSparks Int          @default(0)
+  isCompleted  Boolean      @default(false)
+  completedAt  DateTime?
+
+  dueDate DateTime?
+
+  /// ⚠️ نافذة التنفيذ المجدولة — "من 3 لـ 5".
+  ///
+  ///    بدونها كان النبض يحسب من dueDate (نقطة واحدة) فيسأل
+  ///    والمستخدم لسه جوّه الدرس. الساعة تبدأ من scheduledEnd.
+  scheduledStart DateTime?
+  scheduledEnd   DateTime?
+
+  /// عدد مرات الترحيل التلقائي
+  rescheduleCount Int @default(0)
+
+  /// هل وُلِّدت خطواتها بالـ AI؟
+  aiGenerated Boolean @default(false)
+
+  /// ── البلوكات الزمنية والتنبيهات المسبقة ──
+  slotDate              DateTime? @db.Date
+  startTime             String?   /// "18:00"
+  endTime               String?   /// "20:00"
+  soundTheme            String    @default("ZEN_BELL") /// ZEN_BELL, WARRIOR_CHIME, GENTLE_HARP, PULSE_WAVE
+  reminderMinutesBefore Int       @default(5) /// التنبيه التلقائي قبل المهمة بـ 5 دقائق
+  hasPreReminder        Boolean   @default(true)
+  isQuickErrand         Boolean   @default(false)
+  repeatGroupId         String?   /// لربط المهام المنشأة من نفس البلوك
+
+  /// الروتين اليومي (قرار المالك): DAILY = تتكرر تلقائياً كل يوم
+  /// عند إتمامها تُنشأ نسخة اليوم التالي تلقائياً بنفس الاسم والوقت
+  routineType           String?   /// 'DAILY' أو null
+
+  /// ── ربط الجبل (النسخة المعتمدة) ──
+  /// مصدر المهمة: MANUAL = أضافها المستخدم · JOURNEY = مولدة من رحلة جبل
+  source       String?  @default("MANUAL")
+  /// اليوم في رحلة الجبل اللي اتولدت منه — مهمة واحدة لكل يوم (ضد التكرار)
+  journeyDayId String?  @unique
+  journeyDay   JourneyDay? @relation(fields: [journeyDayId], references: [id], onDelete: SetNull)
+  /// المرحلة (GoalStep) اللي اتولدت منها المهمة
+  goalStepId   String?
+  goalStep     GoalStep? @relation(fields: [goalStepId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  steps         TaskStep[]
+  history       TaskHistory[]
+  focusSessions FocusSession[]
+
+  @@index([userId])
+  @@index([userId, isCompleted])
+  @@index([userId, dueDate])
+  @@index([userId, slotDate])
+  @@index([journeyDayId])
+  /// الترتيب الافتراضي في قائمة المهام.
+  /// بلا هذا الفهرس تقرأ القاعدة كل صفوف المستخدم ثم ترتّبها —
+  /// قياس فعلي: Seq Scan على 20,000 صف عند كل فتح للقائمة.
+  @@index([userId, createdAt(sort: Desc)])
+}
+
+model TaskStep {
+  id           String   @id @default(uuid())
+  taskId       String
+  title        String
+  orderIndex   Int
+  estimatedMin Int?
+  isCompleted  Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, orderIndex])
+  @@index([taskId])
+}
+
+/// ⚠️ غير مُنفَّذ — صفر مرجع في الشيفرة (تحقّقنا بـ grep).
+///
+///  الحقل `rescheduleCount` على Task يغطي الحاجة الحالية
+///  (عدّ الترحيلات) بلا سجل تفصيلي.
+///
+///  ⚠️ لا تبنِ عليه قبل كتابة الكتابة فيه.
+///
+///  مخطَّط له: سجل تغييرات المهمة للمراجعة والتحليل.
+model TaskHistory {
+  id        String     @id @default(uuid())
+  taskId    String
+  action    TaskAction
+  meta      Json?
+  createdAt DateTime   @default(now())
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+}
+
+// ════════════════════════════════════════════════════════════
+//  المذكرات — مشفّرة عند التخزين (AES-256-GCM)
+// ════════════════════════════════════════════════════════════
+
+model JournalEntry {
+  id     String   @id @default(uuid())
+  userId String
+  date   DateTime @db.Date
+
+  /// كل الحقول النصية مخزَّنة مشفّرة
+  qSaw       String? /// 👁️ ماذا رأيت اليوم؟
+  qAvoid     String? /// 🚫 ما لا تريد تكراره
+  qUpset     String? /// 🌧️ موقف أزعجك
+  qGood      String? /// ☀️ شيء مبهج
+  bigDump    String? /// ✍️ التفريغ الكبير
+
+  inputSource JournalInputSource @default(TEXT)
+  moodRating  Int?
+
+  /// لقطة إحصائيات اليوم
+  completedTasksCount Int @default(0)
+  totalFocusMin       Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([userId])
+}
+
+// ════════════════════════════════════════════════════════════
+//  الأهداف والمنبه
+// ════════════════════════════════════════════════════════════
+
+/// حالة الأسبوع داخل رحلة الهدف
+enum WeekStatus {
+  /// مفتوح بانتظار التوثيق
+  OPEN
+  /// وُثّق وأُغلق — كبسولة زمنية
+  DOCUMENTED
+  /// تخطّاه المستخدم عمداً — لا يمكن الرجوع
+  SKIPPED
+}
+
+/// ════════════════════════════════════════════════════════════
+///  الهدف الكبير — قائمة توثيق مخصصة (Master Goal Playlist)
+/// ════════════════════════════════════════════════════════════
+///
+/// كل هدف رحلة مقسّمة لأسابيع. كل أسبوع كبسولة زمنية مقفولة.
+///
+/// الفلسفة: المستخدم يراقب تطوّر تفكيره بمرور الوقت،
+/// لا يعدّل الماضي ليبدو أفضل مما كان.
+model Goal {
+  id          String    @id @default(uuid())
+  userId      String
+  title       String
+  description String?
+  targetDate  DateTime?
+
+  /// نقطة الوصول — ما الذي يريد تحقيقه بدقة؟
+  vision      String?
+
+  /// الوعد المكتوب — يظهر فوق كل أسبوع طوال الرحلة
+  /// جملة بصيغة المتكلم يكتبها قبل البدء
+  pledge      String?
+
+  /// مسودة (قبل موافقة المستخدم على خطة الجبل) — لا تظهر في القوائم النشطة
+  draft       Boolean   @default(false)
+
+  /// الأسبوع الحالي في رحلة الهدف
+  currentWeek Int       @default(1)
+  isActive    Boolean   @default(true)
+  isPrimary   Boolean   @default(false)
+
+  /// اكتمل الهدف — يُقفل عن إضافة أسابيع
+  completedAt DateTime?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  steps GoalStep[]
+
+  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  weeks GoalWeek[]
+
+  @@index([userId])
+  @@index([userId, isActive])
+}
+
+/// ════════════════════════════════════════════════════════════
+///  أسبوع داخل رحلة الهدف — كبسولة زمنية
+/// ════════════════════════════════════════════════════════════
+///
+/// ⚠️ قاعدة القفل:
+///   بعد التوثيق يُقفل الأسبوع نهائياً — لا تعديل ولا حذف.
+///   الاستثناء الوحيد: نافذة 5 دقائق بعد الحفظ مباشرةً،
+///   لتصحيح خطأ إملائي أو إجابة أُرسلت بالغلط.
+///
+///   السبب: الحبس المطلق على خطأ مطبعي يُحبط،
+///   والنافذة القصيرة لا تكفي لإعادة كتابة التاريخ.
+model GoalWeek {
+  id          String     @id @default(uuid())
+  goalId      String
+
+  /// رقم الأسبوع داخل الهدف — يبدأ من 1
+  weekNumber  Int
+
+  /// عنوان تحدي هذا الأسبوع
+  title       String
+
+  status      WeekStatus @default(OPEN)
+
+  // ── الأسئلة الثلاثة ──
+
+  /// صف هذا الأسبوع في جملة واحدة عميقة
+  reflection  String?
+
+  /// ما الخطوات والمهارات التي تعلمتها بالفعل؟
+  learnings   String?
+
+  /// ما الأخطاء التي لن تكررها؟ وما الذي تفتخر به؟
+  mistakes    String?
+
+  /// الأسئلة الستة + الأسئلة المخصصة (زر +) — رؤية «بال»
+  /// مصفوفة { q, a } تُخزَّن JSON — كل أسبوع مستقل بلا لخبطة
+  answers     Json?
+
+  // ── رسالة المستقبل ──
+
+  /// رسالة يكتبها لنفسه، تصله بعد 30 يوماً
+  futureNote  String?
+  /// موعد تسليم الرسالة
+  futureAt    DateTime?
+  /// هل سُلّمت؟
+  futureSent  Boolean    @default(false)
+
+  // ── الفيديو (النسخة الثانية) ──
+
+  /// مفتاح الملف في Cloudflare R2 — نصّ فقط لا الملف
+  videoKey    String?
+  /// مدة الفيديو بالثواني
+  videoSecs   Int?
+
+  // ── القفل ──
+
+  /// لحظة التوثيق — بداية نافذة التعديل
+  documentedAt DateTime?
+  /// بعد هذه اللحظة لا تعديل إطلاقاً
+  lockedAt     DateTime?
+
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  goal Goal @relation(fields: [goalId], references: [id], onDelete: Cascade)
+
+  /// لا يتكرر رقم الأسبوع داخل الهدف الواحد
+  @@unique([goalId, weekNumber])
+  @@index([goalId])
+  @@index([futureAt, futureSent])
+  /// ترتيب الأسابيع زمنياً — يمنع الفرز في الذاكرة
+  @@index([goalId, createdAt])
+}
+
+enum WakeResult {
+  WOKE
+  MISSED
+  DISMISSED
+}
+
+/// سجل رنّات المنبه — أساس الستريك والأوسمة والتحديات
+model WakeLog {
+  id      String     @id @default(uuid())
+  userId  String
+  alarmId String?
+  /// اليوم بتوقيت المستخدم المحلي
+  date    DateTime   @db.Date
+  /// الموعد المجدول "06:00"
+  scheduledTime String
+  result  WakeResult
+
+  /// ثوانٍ بين الرنّة والاستيقاظ الفعلي
+  responseSec Int?
+  /// هل حلّ المسألة الحسابية؟
+  solvedTask  Boolean @default(false)
+  firedAt     DateTime @default(now())
+  wokeAt      DateTime?
+
+  user  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  alarm BattleAlarm? @relation(fields: [alarmId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, date])
+  @@index([userId, date])
+}
+
+enum ChallengeStatus {
+  ACTIVE
+  COMPLETED
+  FAILED
+}
+
+/// تحدي استيقاظ جماعي — العشيرة تلتزم بموعد لمدة أيام
+enum ClanChallengeType {
+  COORDINATED_WAKE
+  FOCUS_MARATHON
+  STREAK_DAYS
+}
+
+model WakeChallenge {
+  id      String @id @default(uuid())
+  clanId  String
+  hostId  String
+  title   String
+  /// نوع التحدي: استيقاظ جماعي، ماراثون تركيز، أو استمرارية
+  challengeType ClanChallengeType @default(COORDINATED_WAKE)
+  /// الموعد المطلوب "05:00" في حال كان تحدي استيقاظ
+  targetTime String?
+  /// الدقائق المطلوبة في حال كان ماراثون تركيز (مثلاً 300 دقيقة = 5 ساعات)
+  targetMinutes Int?
+  /// عدد الأيام
+  durationDays Int @default(1)
+  /// مدة التحدي بالساعات (مثلاً 24 ساعة)
+  durationHours Int @default(24)
+
+  startDate DateTime        @db.Date
+  endDate   DateTime        @db.Date
+  status    ChallengeStatus @default(ACTIVE)
+
+  /// شرارات المكافأة عند الإتمام
+  rewardSparks Int @default(100)
+
+  createdAt DateTime @default(now())
+
+  clan         Clan                     @relation(fields: [clanId], references: [id], onDelete: Cascade)
+  participants WakeChallengeParticipant[]
+
+  @@index([clanId, status])
+  @@index([status, endDate])
+}
+
+model WakeChallengeParticipant {
+  id          String @id @default(uuid())
+  challengeId String
+  userId      String
+
+  /// دقائق التركيز المنجزة في الماراثون
+  progressMinutes Int   @default(0)
+  /// عدد الأيام التي استيقظ فيها في الموعد
+  successDays Int     @default(0)
+  /// عدد الأيام التي فاتته
+  missedDays  Int     @default(0)
+  isEliminated Boolean @default(false)
+  isCompleted  Boolean @default(false)
+  rank        Int?
+  rewarded    Boolean @default(false)
+
+  joinedAt DateTime @default(now())
+
+  challenge WakeChallenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([challengeId, userId])
+  @@index([userId])
+}
+
+model BattleAlarm {
+  id     String @id @default(uuid())
+  userId String
+  /// "06:00" بتوقيت المستخدم
+  time   String
+  /// أيام الأسبوع: [0,1,2,...] الأحد = 0
+  days   Int[]  @default([])
+
+  isActive     Boolean   @default(true)
+  /// مهمة الاستيقاظ (ترتيب السرير مثلاً)
+  requireProof Boolean   @default(false)
+  lastFiredAt  DateTime?
+  lastWokeAt   DateTime?
+  /// سلسلة الاستيقاظ المتتالية
+  wakeStreak   Int       @default(0)
+  longestWakeStreak Int  @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  wakeLogs WakeLog[]
+
+  /// ⚠️ قيد على مستوى القاعدة — لا يكفي الفحص في الكود.
+  ///
+  ///    قِسناه فعلياً: 20 طلب متزامن لإنشاء منبه مرّوا كلهم
+  ///    لأن `count()` قرأت 0 قبل أن يكتب أيٌّ منهم.
+  ///    check-then-act لا يصمد تحت التوازي — القاعدة وحدها تفصل.
+  @@unique([userId, time])
+  @@index([userId])
+}
+
+// ════════════════════════════════════════════════════════════
+//  الشرارات — سجل الحركات
+// ════════════════════════════════════════════════════════════
+
+/// كل حركة شرارات تمر من هنا — موجب = كسب، سالب = صرف
+model SparkTransaction {
+  id     String      @id @default(uuid())
+  userId String
+  amount Int
+  source SparkSource
+  /// معرّف السجل المسبب (جلسة/مهمة/وسام/فيديو)
+  refId  String?
+  note   String?
+
+  /// الرصيد بعد الحركة — للتدقيق
+  balanceAfter Int
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, createdAt])
+  @@index([source])
+}
+
+// ════════════════════════════════════════════════════════════
+//  الإنجازات والأوسمة
+// ════════════════════════════════════════════════════════════
+
+/// تعريف الوسام — يُزرع مرة واحدة (seed)
+model Achievement {
+  id       String              @id @default(uuid())
+  /// مفتاح ثابت: FOCUS_BRONZE ، STREAK_GOLD ...
+  code     String              @unique
+  category AchievementCategory
+  tier     AchievementTier
+  title    String
+  description String
+  icon     String?
+
+  /// القيمة المطلوبة (ساعات/أيام/عدد)
+  targetValue Int
+  /// شرارات البونص عند الفتح
+  bonusSparks Int @default(100)
+
+  createdAt DateTime @default(now())
+
+  users UserAchievement[]
+
+  @@unique([category, tier])
+  @@index([category])
+}
+
+/// تقدم المستخدم في وسام
+model UserAchievement {
+  id            String @id @default(uuid())
+  userId        String
+  achievementId String
+
+  /// التقدم الحالي نحو targetValue
+  progress   Int       @default(0)
+  isUnlocked Boolean   @default(false)
+  unlockedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, achievementId])
+  @@index([userId])
+  @@index([userId, isUnlocked])
+}
+
+// ════════════════════════════════════════════════════════════
+//  الألقاب الأسطورية الثلاثة النادرة وهيبة الدخول
+// ════════════════════════════════════════════════════════════
+
+/// تعريف اللقب الأسطوري وشروطه
+model Title {
+  id             String          @id @default(uuid())
+  code           String          @unique /// SOLAR_TITAN, IRON_JUGGERNAUT, CONQUEROR_SOVEREIGN
+  title          String          /// "وحش اليوم الكامل 🐉"
+  subtitle       String          /// "أسطورة الـ 10 ساعات اليومية"
+  description    String
+  tier           TitleTier       @default(MYTHIC)
+  auraEffect     TitleAuraEffect @default(NONE)
+  glowColor      String          @default("#FF1744")
+  soundFx        String          @default("MYTHIC_WAR_HORN")
+  bannerTemplate String          /// "🔥 تنبيه شرفي: تم تسجيل دخول حامل لقب [{title}] {username} إلى الغرفة!"
+  badgeIcon      String          @default("👑")
+  bonusSparks    Int             @default(500)
+
+  /// الشروط المركبة بصيغة JSON
+  requirements   Json
+
+  createdAt      DateTime        @default(now())
+
+  usersHolding    UserTitle[]
+  equippedByUsers User[]          @relation("EquippedTitle")
+
+  @@index([tier])
+}
+
+/// سجل ألقاب المستخدم وحالة فتح كل شرط جزئي
+model UserTitle {
+  id                 String    @id @default(uuid())
+  userId             String
+  titleId            String
+
+  isUnlocked         Boolean   @default(false)
+  unlockedAt         DateTime?
+
+  /// تتبع حالة كل شرط جزئي بصيغة JSON
+  subConditionsState Json?
+
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title Title @relation(fields: [titleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, titleId])
+  @@index([userId])
+  @@index([userId, isUnlocked])
+}
+
+// ════════════════════════════════════════════════════════════
+//  شبكة المتابعة والخصوصية والتواصل الاجتماعي
+// ════════════════════════════════════════════════════════════
+
+/// علاقات المتابعة وطلبات الصداقة للحسابات الخاصة
+model Follow {
+  id          String       @id @default(uuid())
+  followerId  String
+  followingId String
+  status      FollowStatus @default(ACCEPTED)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  follower    User         @relation("UserFollowing", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User         @relation("UserFollowers", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+  @@index([followingId, status])
+}
+
+/// بلاغات المستخدمين والمحتوى المسيء للمراجعة الإدارية
+model UserReport {
+  id              String           @id @default(uuid())
+  reporterId      String
+  reportedId      String
+  targetType      ReportTargetType @default(USER_PROFILE)
+  messageId       String?
+  conversationId  String?
+  contentSnapshot String?          @db.VarChar(2000)
+  reason          ReportReason
+  details         String?
+  status          ReportStatus     @default(PENDING)
+  actionNote      String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  reporter   User         @relation("ReportsMade", fields: [reporterId], references: [id], onDelete: Cascade)
+  reported   User         @relation("ReportsReceived", fields: [reportedId], references: [id], onDelete: Cascade)
+
+  @@index([reportedId])
+  @@index([status])
+  @@index([targetType])
+  @@index([messageId])
+}
+
+// ════════════════════════════════════════════════════════════
+//  المحادثات
+//  الرسائل نفسها في MongoDB — هنا البيانات الوصفية فقط
+// ════════════════════════════════════════════════════════════
+
+model Conversation {
+  id     String           @id @default(uuid())
+  type   ConversationType
+  /// للمحادثات من نوع CLAN
+  clanId String?          @unique
+
+  lastMessageAt   DateTime?
+  lastMessageText String?
+
+  createdAt DateTime @default(now())
+
+  clan         Clan?                     @relation(fields: [clanId], references: [id], onDelete: Cascade)
+  participants ConversationParticipant[]
+
+  @@index([type])
+  @@index([lastMessageAt])
+  messages Message[]
+}
+
+model ConversationParticipant {
+  id             String @id @default(uuid())
+  conversationId String
+  userId         String
+
+  /// آخر رسالة قرأها — لحساب غير المقروء
+  lastReadAt DateTime?
+  isMuted    Boolean   @default(false)
+  joinedAt   DateTime  @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@index([userId])
+}
+
+/// طلب مراسلة من شخص خارج عشائرك
+model MessageRequest {
+  id         String        @id @default(uuid())
+  fromUserId String
+  toUserId   String
+  /// نص أول رسالة
+  introText  String
+  status     RequestStatus @default(PENDING)
+
+  respondedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  fromUser User @relation("ReqFrom", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser   User @relation("ReqTo", fields: [toUserId], references: [id], onDelete: Cascade)
+
+  @@unique([fromUserId, toUserId])
+  @@index([toUserId, status])
+}
+
+model BlockedUser {
+  id        String   @id @default(uuid())
+  blockerId String
+  blockedId String
+  reason    String?
+  createdAt DateTime @default(now())
+
+  blocker User @relation("Blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked User @relation("Blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerId, blockedId])
+  @@index([blockerId])
+}
+
+// ════════════════════════════════════════════════════════════
+//  الدوبامين — فيديوهات تُشترى بالشرارات
+// ════════════════════════════════════════════════════════════
+
+enum VideoProvider {
+  YOUTUBE
+  DIRECT
+}
+
+model Video {
+  id          String  @id @default(uuid())
+  title       String
+  description String?
+  /// المجال المستهدف — null = للجميع
+  domain      Domain?
+  thumbnailUrl String?
+  /// مزوّد الاستضافة
+  provider    VideoProvider @default(YOUTUBE)
+  /// معرّف الفيديو لدى المزوّد (مثلاً k7xL_jy4J8Q) أو رابط مباشر
+  sourceUrl   String
+  durationSec Int
+
+  /// السعر بالشرارات
+  priceSparks Int     @default(0)
+  isActive    Boolean @default(true)
+  viewCount   Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  purchases VideoPurchase[]
+
+  @@index([domain, isActive])
+}
+
+model VideoPurchase {
+  id            String   @id @default(uuid())
+  userId        String
+  videoId       String
+  sparksSpent   Int
+  purchasedAt   DateTime @default(now())
+  lastWatchedAt DateTime?
+  watchCount    Int      @default(0)
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, videoId])
+  @@index([userId])
+  /// مكتبتي — مرتّبة بالأحدث
+  @@index([userId, purchasedAt(sort: Desc)])
+}
+
+// ════════════════════════════════════════════════════════════
+//  الألعاب (وقت الراحة)
+// ════════════════════════════════════════════════════════════
+
+enum GameType {
+  SNAKE
+  DRAW
+  DOMINO
+}
+
+enum GameRoomStatus {
+  WAITING
+  PLAYING
+  FINISHED
+}
+
+/// غرفة لعب — تُنشأ وقت الراحة وتُغلق تلقائياً عند انتهائها
+model GameRoom {
+  id       String         @id @default(uuid())
+  type     GameType
+  status   GameRoomStatus @default(WAITING)
+  /// معرّف قصير للانضمام
+  code     String         @unique
+  hostId   String
+  maxPlayers Int          @default(8)
+
+  /// اللحظة التي يجب أن تُغلق فيها الغرفة (نهاية الراحة)
+  expiresAt DateTime
+  startedAt DateTime?
+  endedAt   DateTime?
+
+  createdAt DateTime @default(now())
+
+  host    User             @relation("GameHost", fields: [hostId], references: [id], onDelete: Cascade)
+  players GameRoomPlayer[]
+
+  @@index([status, expiresAt])
+  @@index([hostId])
+}
+
+model GameRoomPlayer {
+  id       String   @id @default(uuid())
+  roomId   String
+  userId   String
+  score    Int      @default(0)
+  joinedAt DateTime @default(now())
+
+  room GameRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, userId])
+  @@index([userId])
+}
+
+/// لوحات ومسودات الرسم الفردي والتفريغ وقت الاستراحة
+model DrawingSketch {
+  id          String   @id @default(uuid())
+  userId      String
+  title       String   @default("لوحة تفريغ واسترخاء")
+  canvasData  Json     /// مصفوفة الخطوط والألوان
+  previewUrl  String?
+  durationMin Int      @default(5)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, createdAt(sort: Desc)])
+}
+
+// ════════════════════════════════════════════════════════════
+//  الذكاء الاصطناعي
+// ════════════════════════════════════════════════════════════
+
+model AiConversation {
+  id     String @id @default(uuid())
+  userId String
+  mode   AiMode
+
+  title    String?
+  isPinned Boolean @default(false)
+
+  createdAt     DateTime @default(now())
+  lastMessageAt DateTime @default(now())
+
+  user     User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages AiMessage[]
+
+  @@index([userId, mode])
+  @@index([userId, lastMessageAt])
+}
+
+model AiMessage {
+  id             String @id @default(uuid())
+  conversationId String
+  role           AiRole
+  content        String
+
+  /// هل بدأها الـ AI من نفسه؟
+  isProactive Boolean @default(false)
+  /// استهلاك التوكنات — لمراقبة التكلفة
+  tokensUsed  Int?
+
+  createdAt DateTime @default(now())
+
+  conversation AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+}
+
+/// عدّاد الاستخدام اليومي — لفرض حد الـ 5 رسائل المجانية
+model AiUsageLog {
+  id     String   @id @default(uuid())
+  userId String
+  date   DateTime @db.Date
+
+  messageCount Int @default(0)
+  tokensUsed   Int @default(0)
+
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([userId])
+}
+
+// ════════════════════════════════════════════════════════════
+//  الاشتراكات والدفع
+// ════════════════════════════════════════════════════════════
+
+model Subscription {
+  id     String             @id @default(uuid())
+  userId String             @unique
+  plan   SubscriptionPlan   @default(FREE)
+  status SubscriptionStatus @default(ACTIVE)
+
+  /// تجاوز يدوي لحدّ الرسائل — null = اتبع الباقة
+  ///
+  /// ⚠️ كان @default(5) فكان كل سجل يحمل 5 ويتجاوز الباقة،
+  ///    فحصل مشترك HIGH على 5 رسائل بدل 500. قِسناه فعلياً.
+  ///    null الآن تعني "لا تجاوز" — والحدّ يأتي من aiPlans.
+  aiDailyLimit Int?
+
+  currentPeriodStart DateTime  @default(now())
+  currentPeriodEnd   DateTime?
+  cancelledAt        DateTime?
+
+  /// معرّف الاشتراك لدى بوابة الدفع
+  externalId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([currentPeriodEnd])
+}
+
+/// ملاحظة حرة — أفكار المستخدم بكلماته
+///
+/// ⚠️ المرافق يقرأها ولا يكتبها. أثمن مصدر للسياق لأنها
+///    الشيء الوحيد الذي يكتبه المستخدم بلا قالب.
+model Note {
+  id     String @id @default(uuid())
+  userId String
+
+  title String?
+  body  String
+
+  /// وسم اختياري يربطها بمجال — "كيميا" · "شغل"
+  tag String?
+
+  /// مثبّتة أعلى القائمة
+  isPinned Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, updatedAt(sort: Desc)])
+}
+
+/// نبضة استباقية — رسالة بدأها المرافق بلا طلب من المستخدم
+/// حدث مرصود ينتظر سؤالاً — قبل أن يصير إشعاراً
+///
+/// ⚠️ الفصل بين "حدث مرصود" و"إشعار مُرسَل" مقصود:
+///    عدة أحداث قد تُدمج في إشعار واحد. لو خلطناهما لصار
+///    كل حدث إشعاراً منفصلاً — وهو بالضبط ما نتجنّبه.
+model AiPulseEvent {
+  id     String @id @default(uuid())
+  userId String
+
+  /// TASK_DONE · TASK_SCHEDULED_END · ALARM_FIRED · FOCUS_DONE · WEEK_DUE
+  trigger String
+  /// معرّف الكيان — يمنع رصد نفس الشيء مرتين
+  subjectKey String
+  /// اسم الموضوع كما يراه المستخدم: "درس كيميا"
+  subjectName String
+
+  /// متى استحقّ السؤال (وقت الحدث + تأخير الباقة)
+  dueAt DateTime
+
+  /// PENDING · MERGED · SENT · EXPIRED
+  status String @default("PENDING")
+
+  /// الإشعار الذي ضمّه (قد يضم عدة أحداث)
+  pulseId String?
+  pulse   AiPulse? @relation(fields: [pulseId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// ⚠️ الحارس الحقيقي: حدث واحد يُسأل عنه مرة واحدة إلى الأبد
+  @@unique([userId, subjectKey])
+  @@index([userId, status, dueAt])
+}
+
+/// إشعار منبثق — قد يحمل حدثاً أو عدة أحداث مدموجة
+model AiPulse {
+  id     String @id @default(uuid())
+  userId String
+
+  /// TEMPLATE = قالب برمجي (صفر توكن) · AI = مولّد
+  kind String @default("TEMPLATE")
+
+  /// نصّ الإشعار كما ظهر
+  message String
+
+  /// هل ردّ عليها أم ضغط "لاحقاً"؟
+  answered   Boolean   @default(false)
+  answeredAt DateTime?
+  dismissed  Boolean   @default(false)
+  dismissedAt DateTime?
+
+  conversationId String?
+  notificationId String?
+
+  createdAt DateTime @default(now())
+
+  user   User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  events AiPulseEvent[]
+
+  @@index([userId, createdAt])
+}
+
+/// دورة الـ JSON الثابتة — تُرسل كل 6 ساعات بصرف النظر عن الأحداث
+///
+/// ⚠️ ليست إشعاراً. مجرد تسجيل أن السياق سُلّم للنموذج،
+///    ليعرف ما جرى حتى لو تجاهل المستخدم كل الإشعارات.
+model AiContextSync {
+  id     String @id @default(uuid())
+  userId String
+
+  /// ملخّص ما رآه — للمراجعة والتشخيص
+  summary String
+  /// عدد التوكنات التي كلّفها
+  tokensUsed Int @default(0)
+
+  syncedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, syncedAt(sort: Desc)])
+}
+
+/// رسالة محادثة.
+///
+/// ⚠️ كانت في MongoDB — مجموعة واحدة في قاعدة كاملة.
+///
+///  المشكلة: بيانات المحادثة موزّعة على مخزنين بلا معاملة
+///  بينهما. حذف محادثة من Postgres كان يترك رسائلها في Mongo
+///  **إلى الأبد** — تحقّقنا: لا يوجد `Message.deleteMany` في
+///  الشيفرة كلها مرتبط بحذف محادثة.
+///
+///  قِسنا قبل النقل على 200 ألف رسالة في Postgres:
+///     آخر 50 رسالة:  0.82 ms  (Index Scan)
+///     الحجم:         46 MB
+///  أي أن تشغيل قاعدة ثانية لم يكن يشتري شيئاً.
+///
+/// ⚠️ onDelete: Cascade هو جوهر الإصلاح — القاعدة نفسها تضمن
+///    ألا تبقى رسالة بلا محادثة.
+model Message {
+  id             String  @id @default(uuid())
+  conversationId String
+  senderId       String
+  /// لقطة الاسم وقت الإرسال — لا نربطها بالمستخدم كي تبقى
+  /// الرسالة مقروءة بعد حذف الحساب
+  senderName     String
+
+  text String @db.VarChar(2000)
+
+  /// رد على رسالة أخرى — لقطة لا مرجع
+  replyToId     String?
+  replyToText   String?
+  replyToSender String?
+
+  /// [{ userId, emoji }]
+  reactions Json     @default("[]")
+  readBy    String[] @default([])
+
+  isEdited  Boolean   @default(false)
+  editedAt  DateTime?
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  /// النمط الأساسي: آخر رسائل محادثة. قِسناه: Index Scan في 0.82ms
+  @@index([conversationId, createdAt(sort: Desc)])
+  @@index([senderId])
+}
+
+/// ⚠️ غير مُنفَّذ — صفر مرجع، ولا توجد بوابة دفع في المشروع
+///  (لا stripe ولا paymob ولا fawry في package.json).
+///
+///  ⚠️ خطر عند التنفيذ: هذا الجدول يصير حسّاساً فور وصله
+///     ببوابة. قبل أول عملية حقيقية يجب:
+///       · التحقق من توقيع الـ webhook
+///       · مفتاح idempotency على externalId
+///       · عدم الوثوق بالخطة القادمة من العميل إطلاقاً
+///
+///  Subscription.plan يُضبط يدوياً من القاعدة حالياً.
+model Payment {
+  id     String @id @default(uuid())
+  userId String
+
+  amount   Int /// بالقروش/السنت — تجنّب الفواصل العشرية
+  currency String @default("EGP")
+  status   String /// pending | succeeded | failed | refunded
+
+  provider   String /// stripe | paymob | fawry
+  externalId String? @unique
+  meta       Json?
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+}
+
+// ════════════════════════════════════════════════════════════
+//  الإشعارات
+// ════════════════════════════════════════════════════════════
+
+model Notification {
+  id     String           @id @default(uuid())
+  userId String
+  type   NotificationType
+  title  String
+  body   String
+
+  /// بيانات إضافية للتوجيه داخل التطبيق
+  data Json?
+
+  isRead Boolean   @default(false)
+  readAt DateTime?
+
+  /// هل أُرسل عبر FCM؟
+  pushSent   Boolean   @default(false)
+  pushSentAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+}
+
+// ════════════════════════════════════════════════════════════
+//  المكتبة الصوتية لجلسات التركيز
+// ════════════════════════════════════════════════════════════
+
+model AudioTrack {
+  id          String        @id @default(uuid())
+  title       String
+  description String?
+  category    AudioCategory @default(LOFI)
+  durationSec Int
+  sourceUrl   String
+  previewUrl  String?
+  sparksCost  Int           @default(50)
+  isActive    Boolean       @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  purchases AudioPurchase[]
+
+  @@index([category, isActive])
+}
+
+model AudioPurchase {
+  id          String   @id @default(uuid())
+  userId      String
+  trackId     String
+  sparksSpent Int
+  purchasedAt DateTime @default(now())
+
+  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  track AudioTrack @relation(fields: [trackId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, trackId])
+  @@index([userId])
+}
+
+// ════════════════════════════════════════════════════════════
+//  نظام الإحالة ومكافآت مشاركة التطبيق
+// ════════════════════════════════════════════════════════════
+
+model Referral {
+  id                String             @id @default(uuid())
+  referrerId        String
+  referredUserId    String             @unique
+  code              String
+  status            ReferralStatus     @default(COMPLETED)
+  sparksAwarded     Int                @default(50)
+  aiMessagesAwarded Int                @default(5)
+  rewardType        ReferralRewardType @default(SPARKS_AND_AI)
+
+  createdAt DateTime @default(now())
+
+  referrer User @relation("ReferrerRel", fields: [referrerId], references: [id], onDelete: Cascade)
+  referred User @relation("ReferredRel", fields: [referredUserId], references: [id], onDelete: Cascade)
+
+  @@index([referrerId])
+  @@index([code])
+}
+
+// ════════════════════════════════════════════════════════════
+//  قسم معلومة اليوم — Daily Golden Insight Vault
+// ════════════════════════════════════════════════════════════
+
+model DailyInsightItem {
+  id            String   @id @default(uuid())
+  title         String
+  content       String   @db.VarChar(2000)
+  domain        Domain
+  specialty     String?
+  speaker       String?  /// اسم المتحدث مثل: إيلون ماسك، ستيف جوبز، سام ألتمان
+  videoUrl      String?  /// رابط مقطع الفيديو المحفز المرتبط
+  videoProvider String   @default("YOUTUBE")
+  takeaway      String?  /// الخلاصة الذهبية العملية
+  tags          String[] @default([])
+  isActive      Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  views DailyInsightLog[]
+
+  @@index([domain, isActive])
+  @@index([specialty])
+}
+
+model DailyInsightLog {
+  id            String   @id @default(uuid())
+  userId        String
+  insightId     String?
+  date          DateTime @db.Date
+  viewedAt      DateTime @default(now())
+  aiPromptUsed  String?
+  sparksAwarded Int      @default(5)
+
+  user    User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  insight DailyInsightItem? @relation(fields: [insightId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, date])
+  @@index([userId])
+}
+
+// ════════════════════════════════════════════════════════════
+//  فحص المزاج والمشاعر اليومية
+// ════════════════════════════════════════════════════════════
+
+model DailyMoodLog {
+  id        String    @id @default(uuid())
+  userId    String
+  date      DateTime  @db.Date
+  mood      MoodState
+  note      String?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([userId])
+}
+
+// ════════════════════════════════════════════════════════════
+//  اقتصاديات الوحدة وحملات التسويق والمصروفات التشغيلية
+// ════════════════════════════════════════════════════════════
+
+/// حملات الإعلانات والتسويق لحساب تكلفة الاستحواذ (CAC)
+model MarketingCampaign {
+  id           String   @id @default(uuid())
+  title        String   /// "حملة إعلانات تيك توك وميتا"
+  platform     String   /// meta | tiktok | google | influencer | other
+  spendAmount  Float    /// المبلغ المصروف
+  currency     String   @default("USD")
+  targetDomain Domain?
+  startDate    DateTime @db.Date
+  endDate      DateTime @db.Date
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([platform])
+  @@index([startDate, endDate])
+}
+
+/// المصروفات التشغيلية (سيرفرات، رواتب، توكنات AI، أدوات)
+model OperationalExpense {
+  id         String          @id @default(uuid())
+  title      String
+  category   ExpenseCategory
+  amount     Float
+  currency   String          @default("USD")
+  paidTo     String?
+  paidAt     DateTime        @default(now())
+  receiptUrl String?
+  notes      String?
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+
+  @@index([category])
+  @@index([paidAt])
+}
+
+
+
+
+
+
+/// خطوة في خطة جبل الأهداف — حقل من حقول الجبل التصاعدية
+/// (آخر خطوة بالترتيب الأعلى = القمة = الهدف النهائي)
+model GoalStep {
+  id          String    @id @default(uuid())
+  goalId      String
+  title       String
+  description String?
+  /// الترتيب من الأسفل (0) إلى القمة (الأعلى)
+  order       Int       @default(0)
+  isCompleted Boolean   @default(false)
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  goal    Goal      @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  journey Journey?
+  tasks   Task[]
+
+  @@index([goalId, order])
+}
+
+
+/// الصداقة — نظام انستقرام: الصداقة شرط المراسلة المفتوحة
+/// رسالة لغير صديق = تُنشئ طلب صداقة (رسالة واحدة فقط)
+model Friendship {
+  id         String   @id @default(uuid())
+  fromUserId String
+  toUserId   String
+  status     FriendshipStatus @default(PENDING)
+  /// نص الرسالة الأولى (يُرسل مع الطلب — يتحول لأول رسالة بعد القبول)
+  introText  String?
+  respondedAt DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  fromUser User @relation("FriendFrom", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser   User @relation("FriendTo", fields: [toUserId], references: [id], onDelete: Cascade)
+
+  @@unique([fromUserId, toUserId])
+  @@index([toUserId, status])
+}
+
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+}
+
+/// كتم مستخدم — كتم إشعارات شخص معين (المحادثة باقية)
+model MutedUser {
+  id        String   @id @default(uuid())
+  muterId   String
+  targetId  String
+  createdAt DateTime @default(now())
+
+  muter  User @relation("Muter", fields: [muterId], references: [id], onDelete: Cascade)
+  target User @relation("MutedTarget", fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@unique([muterId, targetId])
+  @@index([muterId])
+}
+
+
+/// تحدي تركيز جماعي — ينشئه صاحب العشيرة الخاصة (رؤية «بال»)
+/// أعضاء العشيرة يستلمون إشعار قبول/تأجيل · المقبولون في غرفة انتظار
+/// صاحب التحدي يضغط «دخول» → الجميع يدخل الجلسة بالدورة المخصصة
+model FocusChallenge {
+  id        String   @id @default(uuid())
+  clanId    String
+  hostId    String
+  title     String
+  focusMin  Int
+  restMin   Int      /// 1-10 صارم
+  cycles    Int
+  status    String   @default("WAITING") /// WAITING | ACTIVE | FINISHED | CANCELLED
+  startedAt DateTime?
+  createdAt DateTime @default(now())
+
+  clan Clan   @relation(fields: [clanId], references: [id], onDelete: Cascade)
+  host User   @relation("Hosted", fields: [hostId], references: [id], onDelete: Cascade)
+  participants FocusChallengeParticipant[]
+
+  @@index([clanId, status])
+}
+
+/// مشارك في تحدي التركيز
+model FocusChallengeParticipant {
+  id          String   @id @default(uuid())
+  challengeId String
+  userId      String
+  status      String   @default("ACCEPTED") /// ACCEPTED (في الانتظار) | ACTIVE (داخل الجلسة) | LEFT | DECLINED
+  joinedAt    DateTime @default(now())
+
+  challenge FocusChallenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([challengeId, userId])
+  @@index([userId])
+}
+
+/// ════════════════════════════════════════════════════════════
+///  رحلة الهدف (Journey) — الخطة الزمنية لتحقيق GoalStep واحد
+///  الـ AI يولّدها مرة واحدة فقط (أيام) — وبعدها الباك يدير كل حاجة
+/// ════════════════════════════════════════════════════════════
+model Journey {
+  id           String   @id @default(uuid())
+  goalStepId   String   @unique
+  title        String
+  /// إجمالي أيام الرحلة
+  durationDays Int      @default(1)
+  /// اليوم الحالي النشط — المرونة: اليوم الجاي مفتوح دايماً
+  currentDay   Int      @default(1)
+  /// DRAFT = اتولدت قيد المراجعة · ACTIVE = وافق المستخدم · COMPLETED = كل الأيام خلصت
+  status       String   @default("DRAFT")
+  approvedAt   DateTime?
+  completedAt  DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  step GoalStep    @relation(fields: [goalStepId], references: [id], onDelete: Cascade)
+  days JourneyDay[]
+
+  @@index([goalStepId])
+}
+
+/// يوم داخل رحلة — PENDING = لسه · COMPLETED = خلص (كل مهامه المولدة اكتملت)
+model JourneyDay {
+  id            String    @id @default(uuid())
+  journeyId     String
+  dayNumber     Int
+  title         String
+  description   String?
+  scheduledDate DateTime? @db.Date
+  status        String    @default("PENDING") /// PENDING | COMPLETED
+  completedAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  journey Journey @relation(fields: [journeyId], references: [id], onDelete: Cascade)
+  tasks   Task[]
+
+  @@unique([journeyId, dayNumber])
+  @@index([journeyId, status])
+}
