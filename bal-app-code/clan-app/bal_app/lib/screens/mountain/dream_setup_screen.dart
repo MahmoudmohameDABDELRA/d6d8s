@@ -143,12 +143,12 @@ class _DreamSetupScreenState extends State<DreamSetupScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline_rounded, size: 56, color: c.danger),
-            const SizedBox(height: 16),
+            Icon(Icons.error_outline_rounded, size: 64.5, color: c.danger),
+            const SizedBox(height: 18.5),
             Text(_error ?? 'خطأ',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: c.text)),
-            const SizedBox(height: 20),
+            const SizedBox(height: 23),
             OutlinePillButton(
                 label: 'رجوع',
                 onPressed: () => setState(() {
@@ -170,16 +170,16 @@ class _DreamSetupScreenState extends State<DreamSetupScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Icon(Icons.landscape_rounded, size: 70, color: c.primary),
-          const SizedBox(height: 16),
+          Icon(Icons.landscape_rounded, size: 80.5, color: c.primary),
+          const SizedBox(height: 18.5),
           Text('اكتب حلمك',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: c.text)),
-          const SizedBox(height: 8),
+              style: TextStyle(fontSize: 25.5, fontWeight: FontWeight.w700, color: c.text)),
+          const SizedBox(height: 9),
           Text('مثال: عاوز أكون CEO · أتعلم Flutter · أكون مدير منتج',
               textAlign: TextAlign.center,
-              style: TextStyle(color: c.textSecondary, fontSize: 13)),
-          const SizedBox(height: 24),
+              style: TextStyle(color: c.textSecondary, fontSize: 15)),
+          const SizedBox(height: 27.5),
           GlassCard(
             child: TextField(
               controller: _dreamCtrl,
@@ -192,7 +192,7 @@ class _DreamSetupScreenState extends State<DreamSetupScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 23),
           PillButton(
             label: 'اعداد الخطة للقمة',
             icon: Icons.rocket_launch_rounded,
@@ -213,28 +213,28 @@ class _DreamSetupScreenState extends State<DreamSetupScreen> {
         Row(
           children: [
             Text('الرفيق بيسأل',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: c.text)),
+                style: TextStyle(fontSize: 25.5, fontWeight: FontWeight.w700, color: c.text)),
             const Spacer(),
             Text('${q.length} أسئلة',
                 style: TextStyle(color: c.textSecondary)),
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 18.5),
         for (var i = 0; i < q.length; i++) ...[
           GlassCard(
-            margin: const EdgeInsets.only(bottom: 12),
+            margin: const EdgeInsets.only(bottom: 14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('سؤال ${i + 1}',
-                    style: TextStyle(color: c.accent, fontSize: 12, fontWeight: FontWeight.w600)),
-                const SizedBox(height: 6),
+                    style: TextStyle(color: c.accent, fontSize: 14, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 7),
                 Text('${q[i]['question']}',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: c.text)),
-                const SizedBox(height: 12),
+                    style: TextStyle(fontSize: 17.5, fontWeight: FontWeight.w500, color: c.text)),
+                const SizedBox(height: 14),
                 for (var j = 0; j < (q[i]['options'] as List).length; j++)
                   Padding(
-                    padding: const EdgeInsets.only(bottom: 6),
+                    padding: const EdgeInsets.only(bottom: 7),
                     child: _OptionTile(
                       label: (q[i]['options'] as List)[j].toString(),
                       selected: _answers[i] == j,
@@ -245,7 +245,7 @@ class _DreamSetupScreenState extends State<DreamSetupScreen> {
             ),
           ),
         ],
-        const SizedBox(height: 8),
+        const SizedBox(height: 9),
         PillButton(
           label: 'اعرض خطتي',
           icon: Icons.auto_awesome_rounded,
@@ -265,38 +265,38 @@ class _DreamSetupScreenState extends State<DreamSetupScreen> {
       padding: const EdgeInsets.all(AppTheme.spaceXxl),
       children: [
         Text('خطة الرفيق لحلمك',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: c.text)),
-        const SizedBox(height: 4),
+            style: TextStyle(fontSize: 25.5, fontWeight: FontWeight.w700, color: c.text)),
+        const SizedBox(height: 4.5),
         Text('قسم حلمك لـ ${steps.length} حقول — من القاع للقمة',
             style: TextStyle(color: c.textSecondary)),
-        const SizedBox(height: 16),
+        const SizedBox(height: 18.5),
         GlassCard(
           child: Column(
             children: [
               for (var i = steps.length - 1; i >= 0; i--)
                 Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 7),
+                  padding: const EdgeInsets.symmetric(vertical: 8),
                   child: Row(
                     children: [
                       Container(
-                        width: 26,
-                        height: 26,
+                        width: 30,
+                        height: 30,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: i == steps.length - 1 ? c.accent : c.primary.withValues(alpha: 0.2),
                         ),
                         child: Center(
                           child: i == steps.length - 1
-                              ? Icon(Icons.flag_rounded, size: 13, color: const Color(0xFF0A1F14))
+                              ? Icon(Icons.flag_rounded, size: 15, color: const Color(0xFF0A1F14))
                               : Text('${i + 1}',
-                                  style: TextStyle(fontSize: 12, color: c.primary, fontWeight: FontWeight.w700)),
+                                  style: TextStyle(fontSize: 14, color: c.primary, fontWeight: FontWeight.w700)),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 14),
                       Expanded(
                         child: Text(steps[i]['title']?.toString() ?? '',
                             style: TextStyle(
-                                fontSize: 15,
+                                fontSize: 17.5,
                                 fontWeight: i == steps.length - 1 ? FontWeight.w600 : FontWeight.w400,
                                 color: i == steps.length - 1 ? c.accent : c.text)),
                       ),
@@ -306,13 +306,13 @@ class _DreamSetupScreenState extends State<DreamSetupScreen> {
             ],
           ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 23),
         PillButton(
           label: 'أنا موافق — ابنِ الجبل',
           icon: Icons.check_rounded,
           onPressed: _approve,
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 11.5),
         Center(
           child: TextButton(
             onPressed: () => setState(() => _phase = 0),
@@ -332,14 +332,14 @@ class _DreamSetupScreenState extends State<DreamSetupScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.flag_rounded, size: 80, color: c.accent),
-            const SizedBox(height: 20),
+            Icon(Icons.flag_rounded, size: 92, color: c.accent),
+            const SizedBox(height: 23),
             Text('الجبل اتبنى! 🏔️',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: c.text)),
-            const SizedBox(height: 8),
+                style: TextStyle(fontSize: 27.5, fontWeight: FontWeight.w700, color: c.text)),
+            const SizedBox(height: 9),
             Text('رجع للجبل وهتشوف خطتك من تحت للقمة',
                 style: TextStyle(color: c.textSecondary)),
-            const SizedBox(height: 24),
+            const SizedBox(height: 27.5),
             PillButton(
               label: 'شوف الجبل',
               icon: Icons.terrain_rounded,
@@ -370,7 +370,7 @@ class _OptionTile extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: AppTheme.standard,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11.5),
         decoration: BoxDecoration(
           color: selected ? c.primary.withValues(alpha: 0.15) : c.surfaceElevated.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(AppTheme.radiusMd),
@@ -383,13 +383,13 @@ class _OptionTile extends StatelessWidget {
               selected
                   ? Icons.radio_button_checked_rounded
                   : Icons.radio_button_off_rounded,
-              size: 18,
+              size: 20.5,
               color: selected ? c.primary : c.textDisabled,
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 11.5),
             Expanded(
               child: Text(label,
-                  style: TextStyle(fontSize: 13.5, color: c.text)),
+                  style: TextStyle(fontSize: 15.5, color: c.text)),
             ),
           ],
         ),

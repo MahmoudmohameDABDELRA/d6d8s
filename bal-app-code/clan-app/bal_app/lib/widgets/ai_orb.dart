@@ -107,12 +107,12 @@ class _CelebrationOverlayState extends State<CelebrationOverlay>
                   Transform.scale(
                     scale: 1 + t * 0.15,
                     child: Container(
-                      width: 260, height: 260,
+                      width: 299, height: 299,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
                           color: c.accent.withValues(alpha: (1 - t) * 0.8),
-                          width: 3,
+                          width: 3.5,
                         ),
                       ),
                     ),
@@ -126,7 +126,7 @@ class _CelebrationOverlayState extends State<CelebrationOverlay>
                       child: Opacity(
                         opacity: (1 - t).clamp(0.0, 1.0),
                         child: Container(
-                          width: 7, height: 7,
+                          width: 8, height: 8,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: i.isEven ? c.accent : c.primary,

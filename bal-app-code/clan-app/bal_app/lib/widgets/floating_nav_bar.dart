@@ -44,7 +44,7 @@ class FloatingNavBar extends StatelessWidget {
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
           child: Container(
-            height: 66,
+            height: 76,
             decoration: BoxDecoration(
               color: c.isDark
                   ? const Color(0xE6273226)
@@ -70,9 +70,9 @@ class FloatingNavBar extends StatelessWidget {
                     onTap: onHeroFab,
                     child: Center(
                       child: Container(
-                        width: 56,
-                        height: 56,
-                        margin: const EdgeInsets.only(top: 4),
+                        width: 64.5,
+                        height: 64.5,
+                        margin: const EdgeInsets.only(top: 4.5),
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           gradient: LinearGradient(
@@ -90,7 +90,7 @@ class FloatingNavBar extends StatelessWidget {
                           ],
                         ),
                         child: const Icon(Icons.add_rounded,
-                            size: 30, color: Color(0xFF0A1F14)),
+                            size: 34.5, color: Color(0xFF0A1F14)),
                       ),
                     ),
                   ),
@@ -117,7 +117,7 @@ class FloatingNavBar extends StatelessWidget {
         child: AnimatedContainer(
           duration: AppTheme.standard,
           curve: Curves.easeOutCubic,
-          margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+          margin: const EdgeInsets.symmetric(vertical: 9, horizontal: 4.5),
           decoration: BoxDecoration(
             color: active
                 ? c.primary.withValues(alpha: c.isDark ? 0.25 : 0.15)
@@ -129,14 +129,14 @@ class FloatingNavBar extends StatelessWidget {
             children: [
               Icon(
                 item.icon,
-                size: 24,
+                size: 27.5,
                 color: active ? c.primary : c.textSecondary,
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 2.5),
               Text(
                 item.label,
                 style: TextStyle(
-                  fontSize: 9.5,
+                  fontSize: 11,
                   fontWeight: active ? FontWeight.w600 : FontWeight.w400,
                   color: active ? c.primary : c.textDisabled,
                 ),

@@ -73,18 +73,18 @@ class _FocusSetupScreenState extends State<FocusSetupScreen> {
           padding: const EdgeInsets.all(AppTheme.spaceXxl),
           children: [
             Text('ظبط وقتك وابدأ',
-                style: TextStyle(fontSize: 16, color: c.textSecondary)),
-            const SizedBox(height: 20),
+                style: TextStyle(fontSize: 18.5, color: c.textSecondary)),
+            const SizedBox(height: 23),
             _stepper(c, 'وقت التركيز', _focusMin, 'دقيقة', 5, 120,
                 (v) => setState(() => _focusMin = v)),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             _stepper(c, 'فترة الراحة', _restMin, 'دقائق', 1, 10,
                 (v) => setState(() => _restMin = v),
                 locked: true),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             _stepper(c, 'التكرار', _cycles, 'دورات', 1, 8,
                 (v) => setState(() => _cycles = v)),
-            const SizedBox(height: 20),
+            const SizedBox(height: 23),
             // الملخص التلقائي
             GlassCard(
               child: Column(
@@ -92,23 +92,23 @@ class _FocusSetupScreenState extends State<FocusSetupScreen> {
                 children: [
                   Text('$_focusMin دقيقة تركيز × $_cycles + راحة $_restMin بينهم',
                       style: TextStyle(
-                          fontSize: 15,
+                          fontSize: 17.5,
                           fontWeight: FontWeight.w600,
                           color: c.text)),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 7),
                   Text('الإجمالي: $_total دقيقة — آخر دورة = لوبي 🏁',
-                      style: TextStyle(color: c.accent, fontSize: 13)),
+                      style: TextStyle(color: c.accent, fontSize: 15)),
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 27.5),
             PillButton(
               label: 'ابدأ جلسة فردية',
               icon: Icons.play_arrow_rounded,
               loading: _starting,
               onPressed: () => _start(),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             // زر الجلسة الجماعية — تحت (زي ما طلبت)
             OutlinePillButton(
               label: 'جلسة جماعية',
@@ -139,22 +139,22 @@ class _FocusSetupScreenState extends State<FocusSetupScreen> {
               children: [
                 Text(label,
                     style: TextStyle(
-                        fontSize: 13, fontWeight: FontWeight.w500, color: c.textSecondary)),
-                const SizedBox(height: 2),
+                        fontSize: 15, fontWeight: FontWeight.w500, color: c.textSecondary)),
+                const SizedBox(height: 2.5),
                 Text('$value $unit',
                     style: TextStyle(
-                        fontSize: 20, fontWeight: FontWeight.w700, color: c.text)),
+                        fontSize: 23, fontWeight: FontWeight.w700, color: c.text)),
               ],
             ),
           ),
           if (locked)
             Tooltip(
               message: 'الحد الأقصى 10 دقائق — قاعدة صارمة',
-              child: Icon(Icons.lock_rounded, size: 16, color: c.accent),
+              child: Icon(Icons.lock_rounded, size: 18.5, color: c.accent),
             ),
           _stepBtn(c, Icons.remove_rounded,
               value > min ? () => onChange(value - 1) : null),
-          const SizedBox(width: 8),
+          const SizedBox(width: 9),
           _stepBtn(c, Icons.add_rounded,
               value < max ? () => onChange(value + 1) : null),
         ],
@@ -165,7 +165,7 @@ class _FocusSetupScreenState extends State<FocusSetupScreen> {
   Widget _stepBtn(BalColors c, IconData icon, VoidCallback? onTap) {
     return IconCircleButton(
       icon: icon,
-      size: 38,
+      size: 43.5,
       onPressed: onTap,
     );
   }
@@ -281,15 +281,15 @@ class _FocusSessionScreenState extends State<FocusSessionScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.celebration_rounded, size: 80, color: c.accent),
-                const SizedBox(height: 20),
+                Icon(Icons.celebration_rounded, size: 92, color: c.accent),
+                const SizedBox(height: 23),
                 Text('أحسنت! الجلسة خلصت 🎉',
                     style: TextStyle(
-                        fontSize: 24, fontWeight: FontWeight.w700, color: c.text)),
-                const SizedBox(height: 8),
+                        fontSize: 27.5, fontWeight: FontWeight.w700, color: c.text)),
+                const SizedBox(height: 9),
                 Text('${widget.focusMin * widget.cycles} دقيقة تركيز حقيقي',
                     style: TextStyle(color: c.textSecondary)),
-                const SizedBox(height: 24),
+                const SizedBox(height: 27.5),
                 PillButton(
                   label: 'تمام',
                   icon: Icons.check_rounded,
@@ -315,36 +315,36 @@ class _FocusSessionScreenState extends State<FocusSessionScreen> {
           children: [
             Text(_isRest ? 'راحة 🧘' : 'جلسة تركيز',
                 style: TextStyle(
-                    fontSize: 16,
+                    fontSize: 18.5,
                     fontWeight: FontWeight.w600,
                     color: c.textSecondary)),
-            const SizedBox(height: 24),
+            const SizedBox(height: 27.5),
             ProgressRing(
               progress: progress,
-              size: 240,
-              strokeWidth: 12,
+              size: 276,
+              strokeWidth: 14,
               color: _isRest ? c.accent : c.primary,
               center: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text('$mm:$ss',
                       style: TextStyle(
-                          fontSize: 52,
+                          fontSize: 60,
                           fontWeight: FontWeight.w700,
                           color: c.text,
                           fontFeatures: const [FontFeature.tabularFigures()])),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 4.5),
                   Text(_isRest ? 'راحة' : 'دقيقة تركيز',
-                      style: TextStyle(color: c.textSecondary, fontSize: 13)),
+                      style: TextStyle(color: c.textSecondary, fontSize: 15)),
                 ],
               ),
             ),
-            const SizedBox(height: 36),
+            const SizedBox(height: 41.5),
             if (!_isRest)
               PillButton(
                 label: 'أنا هنا 👋',
                 icon: Icons.touch_app_rounded,
-                height: 58,
+                height: 66.5,
                 onPressed: () {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('تمام يا بطل — كمّل تركيزك 💪')),
@@ -360,7 +360,7 @@ class _FocusSessionScreenState extends State<FocusSessionScreen> {
                   _onPhaseEnd();
                 },
               ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 23),
             TextButton(
               onPressed: _complete,
               child: Text('إنهاء الجلسة',

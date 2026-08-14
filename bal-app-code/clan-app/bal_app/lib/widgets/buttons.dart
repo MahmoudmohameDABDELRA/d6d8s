@@ -69,9 +69,9 @@ class _PillButtonState extends State<PillButton> {
           child: Center(
             child: widget.loading
                 ? SizedBox(
-                    width: 22, height: 22,
+                    width: 25.5, height: 25.5,
                     child: CircularProgressIndicator(
-                      strokeWidth: 2.5, color: fg,
+                      strokeWidth: 3, color: fg,
                     ),
                   )
                 : Row(
@@ -79,13 +79,13 @@ class _PillButtonState extends State<PillButton> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       if (widget.icon != null) ...[
-                        Icon(widget.icon, size: 20, color: fg),
-                        const SizedBox(width: 8),
+                        Icon(widget.icon, size: 23, color: fg),
+                        const SizedBox(width: 9),
                       ],
                       Text(
                         widget.label,
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 18.5,
                           fontWeight: FontWeight.w600,
                           color: fg,
                         ),
@@ -141,7 +141,7 @@ class _OutlinePillButtonState extends State<OutlinePillButton> {
         duration: AppTheme.micro,
         child: AnimatedContainer(
           duration: AppTheme.standard,
-          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 13),
+          padding: const EdgeInsets.symmetric(horizontal: 25.5, vertical: 15),
           decoration: BoxDecoration(
             color: _pressed ? fg.withValues(alpha: 0.10) : Colors.transparent,
             borderRadius: BorderRadius.circular(AppTheme.radiusPill),
@@ -151,12 +151,12 @@ class _OutlinePillButtonState extends State<OutlinePillButton> {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (widget.icon != null) ...[
-                Icon(widget.icon, size: 18, color: fg),
-                const SizedBox(width: 8),
+                Icon(widget.icon, size: 20.5, color: fg),
+                const SizedBox(width: 9),
               ],
               Text(widget.label,
                   style: TextStyle(
-                      fontSize: 15, fontWeight: FontWeight.w500, color: fg)),
+                      fontSize: 17.5, fontWeight: FontWeight.w500, color: fg)),
             ],
           ),
         ),

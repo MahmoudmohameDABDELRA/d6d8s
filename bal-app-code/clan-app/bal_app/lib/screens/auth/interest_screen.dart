@@ -60,20 +60,20 @@ class _InterestScreenState extends State<InterestScreen> {
               Text('اختار اهتمامك',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                      fontSize: 24,
+                      fontSize: 27.5,
                       fontWeight: FontWeight.w700,
                       color: c.text)),
-              const SizedBox(height: 8),
+              const SizedBox(height: 9),
               Text('ده اللي هيجمعك بناس زيك في العشائر العامة',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: c.textSecondary, fontSize: 14)),
-              const SizedBox(height: 28),
+                  style: TextStyle(color: c.textSecondary, fontSize: 16)),
+              const SizedBox(height: 32),
               for (final (icon, value, label, desc) in _interests) ...[
                 GestureDetector(
                   onTap: () => setState(() => _selected = value),
                   child: AnimatedContainer(
                     duration: AppTheme.standard,
-                    margin: const EdgeInsets.only(bottom: 10),
+                    margin: const EdgeInsets.only(bottom: 11.5),
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: _selected == value
@@ -89,20 +89,20 @@ class _InterestScreenState extends State<InterestScreen> {
                       children: [
                         Icon(icon,
                             color: _selected == value ? c.primary : c.textSecondary,
-                            size: 26),
-                        const SizedBox(width: 14),
+                            size: 30),
+                        const SizedBox(width: 16),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(label,
                                   style: TextStyle(
-                                      fontSize: 16,
+                                      fontSize: 18.5,
                                       fontWeight: FontWeight.w600,
                                       color: c.text)),
                               Text(desc,
                                   style: TextStyle(
-                                      color: c.textSecondary, fontSize: 12)),
+                                      color: c.textSecondary, fontSize: 14)),
                             ],
                           ),
                         ),
@@ -117,7 +117,7 @@ class _InterestScreenState extends State<InterestScreen> {
                   ),
                 ),
               ],
-              const SizedBox(height: 12),
+              const SizedBox(height: 14),
               PillButton(
                 label: 'متابعة',
                 icon: Icons.arrow_forward_rounded,

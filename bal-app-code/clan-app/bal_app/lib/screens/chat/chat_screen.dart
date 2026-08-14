@@ -77,7 +77,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   AppTheme.spaceXxl, AppTheme.spaceLg, AppTheme.spaceXxl, 0),
               child: Text('الرسائل',
                   style: TextStyle(
-                      fontSize: 28, fontWeight: FontWeight.w700, color: c.text)),
+                      fontSize: 32, fontWeight: FontWeight.w700, color: c.text)),
             ),
             // البحث
             Padding(
@@ -100,16 +100,16 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
             // التبويبان
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 23),
               child: Row(
                 children: [
                   _tabBtn(context, 0, 'المحادثات'),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 9),
                   _tabBtn(context, 1, 'العشيرة'),
                 ],
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 9),
             Expanded(
               child: _searching
                   ? _searchList(c)
@@ -130,7 +130,7 @@ class _ChatScreenState extends State<ChatScreen> {
       onTap: () => setState(() => _tab = idx),
       child: AnimatedContainer(
         duration: AppTheme.standard,
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 9),
+        padding: const EdgeInsets.symmetric(horizontal: 20.5, vertical: 10.5),
         decoration: BoxDecoration(
           color: active ? c.primary : Colors.transparent,
           borderRadius: BorderRadius.circular(AppTheme.radiusPill),
@@ -138,7 +138,7 @@ class _ChatScreenState extends State<ChatScreen> {
         ),
         child: Text(label,
             style: TextStyle(
-                fontSize: 14,
+                fontSize: 16,
                 fontWeight: FontWeight.w600,
                 color: active ? c.onPrimary : c.textSecondary)),
       ),
@@ -154,12 +154,12 @@ class _ChatScreenState extends State<ChatScreen> {
       );
     }
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 23, vertical: 9),
       itemCount: _searchResults.length,
       itemBuilder: (context, i) {
         final u = _searchResults[i];
         return Container(
-          margin: const EdgeInsets.only(bottom: 8),
+          margin: const EdgeInsets.only(bottom: 9),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: c.surfaceElevated.withValues(alpha: 0.7),
@@ -169,29 +169,29 @@ class _ChatScreenState extends State<ChatScreen> {
           child: Row(
             children: [
               CircleAvatar(
-                radius: 20,
+                radius: 21.5,
                 backgroundColor: c.primary.withValues(alpha: 0.2),
                 child: Icon(Icons.person_rounded, color: c.primary),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text('${u['username'] ?? ''}',
                         style: TextStyle(
-                            fontSize: 15,
+                            fontSize: 17.5,
                             fontWeight: FontWeight.w600,
                             color: c.text)),
                     Text('${u['domain'] ?? 'اهتمام'}',
-                        style: TextStyle(color: c.textSecondary, fontSize: 12)),
+                        style: TextStyle(color: c.textSecondary, fontSize: 14)),
                   ],
                 ),
               ),
               // إرسال طلب صداقة (نظام انستقرام)
               IconCircleButton(
                 icon: Icons.person_add_alt_1_rounded,
-                size: 38,
+                size: 43.5,
                 onPressed: () async {
                   try {
                     final res = await ApiClient.instance
@@ -238,12 +238,12 @@ class _ChatScreenState extends State<ChatScreen> {
       );
     }
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 23, vertical: 9),
       itemCount: _conversations.length,
       itemBuilder: (context, i) {
         final conv = _conversations[i];
         return Container(
-          margin: const EdgeInsets.only(bottom: 8),
+          margin: const EdgeInsets.only(bottom: 9),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: c.surfaceElevated.withValues(alpha: 0.7),
@@ -253,15 +253,15 @@ class _ChatScreenState extends State<ChatScreen> {
           child: Row(
             children: [
               CircleAvatar(
-                radius: 22,
+                radius: 23.5,
                 backgroundColor: c.friendship.withValues(alpha: 0.25),
                 child: Icon(Icons.person_rounded, color: c.friendship),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 14),
               Expanded(
                 child: Text('${conv['title'] ?? 'محادثة'}',
                     style: TextStyle(
-                        fontSize: 15,
+                        fontSize: 17.5,
                         fontWeight: FontWeight.w600,
                         color: c.text)),
               ),
@@ -275,26 +275,26 @@ class _ChatScreenState extends State<ChatScreen> {
   // قائمة العشائر
   Widget _clansList(BalColors c) {
     return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 23, vertical: 9),
       children: [
         GlassCard(
-          margin: const EdgeInsets.only(bottom: 8),
+          margin: const EdgeInsets.only(bottom: 9),
           child: Row(
             children: [
-              Icon(Icons.groups_rounded, color: c.friendship, size: 28),
-              const SizedBox(width: 12),
+              Icon(Icons.groups_rounded, color: c.friendship, size: 32),
+              const SizedBox(width: 14),
               Expanded(
                 child: Text('عشائر عامة (حسب اهتمامك)',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: c.text)),
+                    style: TextStyle(fontSize: 17.5, fontWeight: FontWeight.w600, color: c.text)),
               ),
               OutlinePillButton(label: 'دخول', onPressed: () {}),
             ],
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 9),
         Text('العشائر الخاصة بتظهر هنا بعد ما تنضم',
             textAlign: TextAlign.center,
-            style: TextStyle(color: c.textSecondary, fontSize: 12)),
+            style: TextStyle(color: c.textSecondary, fontSize: 14)),
       ],
     );
   }

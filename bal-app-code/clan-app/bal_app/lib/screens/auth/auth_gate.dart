@@ -76,8 +76,8 @@ class _AuthGateState extends State<AuthGate> {
               children: [
                 // الشعار
                 Container(
-                  width: 76,
-                  height: 76,
+                  width: 87.5,
+                  height: 87.5,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
@@ -94,20 +94,20 @@ class _AuthGateState extends State<AuthGate> {
                     ],
                   ),
                   child: Icon(Icons.terrain_rounded,
-                      size: 40, color: c.isDark ? const Color(0xFF0A1F14) : Colors.white),
+                      size: 46, color: c.isDark ? const Color(0xFF0A1F14) : Colors.white),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 23),
                 Text('بال',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                        fontSize: 34,
+                        fontSize: 39,
                         fontWeight: FontWeight.w700,
                         color: c.text)),
-                const SizedBox(height: 4),
+                const SizedBox(height: 4.5),
                 Text('رفيقك للقمة 🏔️',
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: c.textSecondary, fontSize: 14)),
-                const SizedBox(height: 32),
+                    style: TextStyle(color: c.textSecondary, fontSize: 16)),
+                const SizedBox(height: 37),
                 GlassCard(
                   padding: const EdgeInsets.all(AppTheme.spaceXl),
                   child: Column(
@@ -119,7 +119,7 @@ class _AuthGateState extends State<AuthGate> {
                           style: TextStyle(color: c.text),
                           decoration: _dec(c, 'الاسم', Icons.person_rounded),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 14),
                       ],
                       TextField(
                         controller: _email,
@@ -127,7 +127,7 @@ class _AuthGateState extends State<AuthGate> {
                         keyboardType: TextInputType.emailAddress,
                         decoration: _dec(c, 'البريد الإلكتروني', Icons.email_rounded),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 14),
                       TextField(
                         controller: _password,
                         style: TextStyle(color: c.text),
@@ -142,14 +142,14 @@ class _AuthGateState extends State<AuthGate> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 23),
                       PillButton(
                         label: _register ? 'إنشاء الحساب' : 'دخول',
                         loading: state.loading,
                         onPressed: _submit,
                         icon: Icons.login_rounded,
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 14),
                       TextButton(
                         onPressed: () => setState(() => _register = !_register),
                         child: Text(
@@ -231,19 +231,19 @@ class _CompanionNamingScreenState extends State<CompanionNamingScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              AIOrb(size: 72),
-              const SizedBox(height: 20),
+              AIOrb(size: 83),
+              const SizedBox(height: 23),
               Text('بماذا تريد أن تناديني؟',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                      fontSize: 22,
+                      fontSize: 25.5,
                       fontWeight: FontWeight.w600,
                       color: c.text)),
-              const SizedBox(height: 8),
+              const SizedBox(height: 9),
               Text('أنا رفيقك — سمّيني باي اسم تحبه، وهيبقى اسمي معاك في كل حتة',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: c.textSecondary, fontSize: 14)),
-              const SizedBox(height: 28),
+                  style: TextStyle(color: c.textSecondary, fontSize: 16)),
+              const SizedBox(height: 32),
               TextField(
                 controller: _name,
                 style: TextStyle(color: c.text),
@@ -259,7 +259,7 @@ class _CompanionNamingScreenState extends State<CompanionNamingScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 23),
               PillButton(
                 label: 'هو ده — يلا نبدأ 🚀',
                 loading: _saving,

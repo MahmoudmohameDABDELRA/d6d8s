@@ -25,7 +25,7 @@ class ProfileScreen extends StatelessWidget {
               children: [
                 Text('أنا',
                     style: TextStyle(
-                        fontSize: 28, fontWeight: FontWeight.w700, color: c.text)),
+                        fontSize: 32, fontWeight: FontWeight.w700, color: c.text)),
                 const Spacer(),
                 IconButton(
                   icon: Icon(
@@ -37,29 +37,29 @@ class ProfileScreen extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 18.5),
             // الكارت الشخصي
             GlassCard(
               child: Column(
                 children: [
                   CircleAvatar(
-                    radius: 36,
+                    radius: 38.5,
                     backgroundColor: c.primary.withValues(alpha: 0.2),
                     child: Icon(Icons.person_rounded,
-                        size: 40, color: c.primary),
+                        size: 46, color: c.primary),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 14),
                   Text(user?.username ?? 'مستخدم',
                       style: TextStyle(
-                          fontSize: 20,
+                          fontSize: 23,
                           fontWeight: FontWeight.w700,
                           color: c.text)),
                   if (user?.companionName != null) ...[
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 4.5),
                     Text('رفيقي: ${user!.companionName}',
-                        style: TextStyle(color: c.accent, fontSize: 13)),
+                        style: TextStyle(color: c.accent, fontSize: 15)),
                   ],
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 18.5),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
@@ -70,11 +70,11 @@ class ProfileScreen extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 23),
             _actionTile(context, Icons.alarm_rounded, 'المنبهات', '4:00 فجراً', () {}),
             _actionTile(context, Icons.menu_book_rounded, 'التوثيق الأسبوعي', '', () {}),
             _actionTile(context, Icons.settings_rounded, 'الإعدادات', '', () {}),
-            const SizedBox(height: 24),
+            const SizedBox(height: 27.5),
             OutlinePillButton(
               label: 'تسجيل الخروج',
               icon: Icons.logout_rounded,
@@ -91,9 +91,9 @@ class ProfileScreen extends StatelessWidget {
     return Column(
       children: [
         Text('$emoji $value',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: c.text)),
-        const SizedBox(height: 2),
-        Text(label, style: TextStyle(color: c.textSecondary, fontSize: 12)),
+            style: TextStyle(fontSize: 20.5, fontWeight: FontWeight.w700, color: c.text)),
+        const SizedBox(height: 2.5),
+        Text(label, style: TextStyle(color: c.textSecondary, fontSize: 14)),
       ],
     );
   }
@@ -102,7 +102,7 @@ class ProfileScreen extends StatelessWidget {
       BuildContext context, IconData icon, String title, String subtitle, VoidCallback onTap) {
     final c = BalColors(context);
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: const EdgeInsets.only(bottom: 9),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: c.surfaceElevated.withValues(alpha: 0.7),
@@ -113,15 +113,15 @@ class ProfileScreen extends StatelessWidget {
         onTap: onTap,
         child: Row(
           children: [
-            Icon(icon, color: c.primary, size: 22),
-            const SizedBox(width: 14),
+            Icon(icon, color: c.primary, size: 25.5),
+            const SizedBox(width: 16),
             Expanded(
               child: Text(title,
                   style: TextStyle(
-                      fontSize: 15, fontWeight: FontWeight.w600, color: c.text)),
+                      fontSize: 17.5, fontWeight: FontWeight.w600, color: c.text)),
             ),
             if (subtitle.isNotEmpty)
-              Text(subtitle, style: TextStyle(color: c.textSecondary, fontSize: 12)),
+              Text(subtitle, style: TextStyle(color: c.textSecondary, fontSize: 14)),
             Icon(Icons.chevron_left_rounded, color: c.textSecondary),
           ],
         ),

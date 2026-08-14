@@ -60,21 +60,21 @@ class _CreateMenuSheet extends StatelessWidget {
         children: [
           Center(
             child: Container(
-              width: 36,
-              height: 4,
+              width: 41.5,
+              height: 4.5,
               decoration: BoxDecoration(
                 color: c.textDisabled,
                 borderRadius: BorderRadius.circular(999),
               ),
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 23),
           Text('إضافة سريعة',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: c.text)),
-          const SizedBox(height: 16),
+              style: TextStyle(fontSize: 20.5, fontWeight: FontWeight.w600, color: c.text)),
+          const SizedBox(height: 18.5),
           for (final item in items) ...[
             _CreateItemTile(item: item),
-            const SizedBox(height: 8),
+            const SizedBox(height: 9),
           ],
         ],
       ),
@@ -101,18 +101,18 @@ class _CreateItemTile extends StatelessWidget {
         child: Row(
           children: [
             Container(
-              width: 42,
-              height: 42,
+              width: 48.5,
+              height: 48.5,
               decoration: BoxDecoration(
                 color: item.color.withValues(alpha: 0.15),
                 shape: BoxShape.circle,
               ),
-              child: Icon(item.icon, color: item.color, size: 22),
+              child: Icon(item.icon, color: item.color, size: 25.5),
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: 16),
             Text(item.label,
                 style: TextStyle(
-                    fontSize: 15,
+                    fontSize: 17.5,
                     fontWeight: FontWeight.w600,
                     color: c.text)),
             const Spacer(),

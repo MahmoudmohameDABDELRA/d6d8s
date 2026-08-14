@@ -5,21 +5,25 @@ import 'app_colors.dart';
 abstract final class AppTheme {
   static const fontFamily = 'IBMPlexSansArabic';
 
+  /// ️ الأحجام مكبّرة 15% عن الأصل (قرار المالك) — والزوايا 7.5% بس.
+  ///    تكبير الزاوية بنفس نسبة الحجم بيخلي الكارت يبان «أكتر استدارة»
+  ///    مش «أكبر»، فالشكل بيتغير مش الحجم بس.
+  ///    السكربت: scripts/scale-ui.mjs
   // المسافات (Spacing System)
-  static const double spaceXs = 4;
-  static const double spaceSm = 8;
-  static const double spaceMd = 12;
-  static const double spaceLg = 16;
-  static const double spaceXl = 20;
-  static const double spaceXxl = 24;
-  static const double spaceXxxl = 32;
+  static const double spaceXs = 4.5;
+  static const double spaceSm = 9;
+  static const double spaceMd = 14;
+  static const double spaceLg = 18.5;
+  static const double spaceXl = 23;
+  static const double spaceXxl = 27.5;
+  static const double spaceXxxl = 37;
 
   // الزوايا (Radius System)
-  static const double radiusXs = 8;
-  static const double radiusSm = 12;
-  static const double radiusMd = 16;
-  static const double radiusLg = 20;
-  static const double radiusXl = 24;
+  static const double radiusXs = 8.5;
+  static const double radiusSm = 13;
+  static const double radiusMd = 17;
+  static const double radiusLg = 21.5;
+  static const double radiusXl = 26;
   static const double radiusPill = 999;
 
   // الحركة (Motion System)
@@ -88,21 +92,21 @@ abstract final class AppTheme {
           )
           .copyWith(
             headlineLarge: base.textTheme.headlineLarge?.copyWith(
-              fontSize: 34, fontWeight: FontWeight.w700, height: 1.2),
+              fontSize: 39, fontWeight: FontWeight.w700, height: 1.2),
             headlineMedium: base.textTheme.headlineMedium?.copyWith(
-              fontSize: 28, fontWeight: FontWeight.w700, height: 1.2),
+              fontSize: 32, fontWeight: FontWeight.w700, height: 1.2),
             headlineSmall: base.textTheme.headlineSmall?.copyWith(
-              fontSize: 22, fontWeight: FontWeight.w600, height: 1.2),
+              fontSize: 25.5, fontWeight: FontWeight.w600, height: 1.2),
             titleLarge: base.textTheme.titleLarge?.copyWith(
-              fontSize: 18, fontWeight: FontWeight.w600, height: 1.3),
+              fontSize: 20.5, fontWeight: FontWeight.w600, height: 1.3),
             titleMedium: base.textTheme.titleMedium?.copyWith(
-              fontSize: 16, fontWeight: FontWeight.w600, height: 1.4),
+              fontSize: 18.5, fontWeight: FontWeight.w600, height: 1.4),
             bodyLarge: base.textTheme.bodyLarge?.copyWith(
-              fontSize: 16, fontWeight: FontWeight.w400, height: 1.5),
+              fontSize: 18.5, fontWeight: FontWeight.w400, height: 1.5),
             bodyMedium: base.textTheme.bodyMedium?.copyWith(
-              fontSize: 14, fontWeight: FontWeight.w400, height: 1.5),
+              fontSize: 16, fontWeight: FontWeight.w400, height: 1.5),
             bodySmall: base.textTheme.bodySmall?.copyWith(
-              fontSize: 12, fontWeight: FontWeight.w400, height: 1.5),
+              fontSize: 14, fontWeight: FontWeight.w400, height: 1.5),
           ),
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,

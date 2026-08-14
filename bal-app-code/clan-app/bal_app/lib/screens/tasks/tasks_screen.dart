@@ -136,7 +136,7 @@ class _TasksScreenState extends State<TasksScreen> {
                       padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
                       sliver: SliverToBoxAdapter(
                         child: Text('منجز',
-                            style: TextStyle(color: c.textSecondary, fontSize: 13)),
+                            style: TextStyle(color: c.textSecondary, fontSize: 15)),
                       ),
                     ),
                     SliverPadding(
@@ -154,7 +154,7 @@ class _TasksScreenState extends State<TasksScreen> {
                   ],
                 ],
               ],
-              const SliverToBoxAdapter(child: SizedBox(height: 110)),
+              const SliverToBoxAdapter(child: SizedBox(height: 126.5)),
             ],
           ),
         ),
@@ -173,7 +173,7 @@ class _TasksScreenState extends State<TasksScreen> {
             children: [
               Text('مهامك',
                   style: TextStyle(
-                      fontSize: 28,
+                      fontSize: 32,
                       fontWeight: FontWeight.w700,
                       color: c.text)),
               const Spacer(),
@@ -184,16 +184,16 @@ class _TasksScreenState extends State<TasksScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           Row(
             children: [
               Expanded(
                 child: LinearProgressBar(progress: progress),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 14),
               Text(
                 '${_tasks.where((t) => !t.isCompleted).length} باقي',
-                style: TextStyle(color: c.textSecondary, fontSize: 13),
+                style: TextStyle(color: c.textSecondary, fontSize: 15),
               ),
             ],
           ),
@@ -209,11 +209,11 @@ class _TasksScreenState extends State<TasksScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.cloud_off_rounded, size: 56, color: c.textDisabled),
-            const SizedBox(height: 16),
+            Icon(Icons.cloud_off_rounded, size: 64.5, color: c.textDisabled),
+            const SizedBox(height: 18.5),
             Text('مفيش اتصال بالباك',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: c.text)),
-            const SizedBox(height: 20),
+                style: TextStyle(fontSize: 20.5, fontWeight: FontWeight.w600, color: c.text)),
+            const SizedBox(height: 23),
             OutlinePillButton(label: 'إعادة المحاولة', icon: Icons.refresh_rounded, onPressed: _load),
           ],
         ),
@@ -228,11 +228,11 @@ class _TasksScreenState extends State<TasksScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.task_alt_rounded, size: 70, color: c.textDisabled),
-            const SizedBox(height: 16),
+            Icon(Icons.task_alt_rounded, size: 80.5, color: c.textDisabled),
+            const SizedBox(height: 18.5),
             Text('يومك فاضي — أحلى حاجة',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: c.text)),
-            const SizedBox(height: 8),
+                style: TextStyle(fontSize: 20.5, fontWeight: FontWeight.w600, color: c.text)),
+            const SizedBox(height: 9),
             // ️ كانت بتقول «هتيجي لوحدها» وهي مش بتيجي إلا لما
             //    المستخدم يوافق على جبله. الوعد الكاذب أسوأ من الصمت.
             Text('لو مثبّت جبلك، مهام النهاردة بتنزل هنا لوحدها كل يوم — وتقدر تضيف مهامك براحتك',
@@ -258,7 +258,7 @@ class _TaskTile extends StatelessWidget {
     final isMountain = task.fromMountain;
 
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 6),
+      margin: const EdgeInsets.symmetric(vertical: 7),
       padding: const EdgeInsets.all(AppTheme.spaceLg),
       decoration: BoxDecoration(
         color: c.surfaceElevated.withValues(alpha: 0.75),
@@ -282,24 +282,24 @@ class _TaskTile extends StatelessWidget {
             onTap: onComplete,
             child: AnimatedContainer(
               duration: AppTheme.standard,
-              width: 30,
-              height: 30,
+              width: 34.5,
+              height: 34.5,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: task.isCompleted ? c.primary : Colors.transparent,
                 border: Border.all(
                   color: task.isCompleted ? c.primary : c.textDisabled,
-                  width: 2,
+                  width: 2.5,
                 ),
               ),
               child: task.isCompleted
                   ? Icon(Icons.check_rounded,
-                      size: 18,
+                      size: 20.5,
                       color: c.isDark ? const Color(0xFF0A1F14) : Colors.white)
                   : null,
             ),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -310,7 +310,7 @@ class _TaskTile extends StatelessWidget {
                       child: Text(
                         task.title,
                         style: TextStyle(
-                          fontSize: 15,
+                          fontSize: 17.5,
                           fontWeight: FontWeight.w600,
                           color: task.isCompleted ? c.textDisabled : c.text,
                           decoration: task.isCompleted
@@ -322,9 +322,9 @@ class _TaskTile extends StatelessWidget {
                       ),
                     ),
                     if (isMountain) ...[
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 7),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
                         decoration: BoxDecoration(
                           color: c.primary.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(999),
@@ -332,10 +332,10 @@ class _TaskTile extends StatelessWidget {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.terrain_rounded, size: 10, color: c.primary),
-                            const SizedBox(width: 3),
+                            Icon(Icons.terrain_rounded, size: 11.5, color: c.primary),
+                            const SizedBox(width: 3.5),
                             Text('من الجبل',
-                                style: TextStyle(fontSize: 9, color: c.primary, fontWeight: FontWeight.w600)),
+                                style: TextStyle(fontSize: 10.5, color: c.primary, fontWeight: FontWeight.w600)),
                           ],
                         ),
                       ),
@@ -343,10 +343,10 @@ class _TaskTile extends StatelessWidget {
                   ],
                 ),
                 if (task.startTime != null || task.endTime != null) ...[
-                  const SizedBox(height: 3),
+                  const SizedBox(height: 3.5),
                   Text(
                     '${task.startTime ?? '--'} - ${task.endTime ?? '--'}',
-                    style: TextStyle(color: c.textSecondary, fontSize: 12),
+                    style: TextStyle(color: c.textSecondary, fontSize: 14),
                   ),
                 ],
               ],
@@ -428,16 +428,16 @@ class _AddTaskSheetState extends State<_AddTaskSheet> {
           children: [
             Center(
               child: Container(
-                  width: 36, height: 4,
+                  width: 41.5, height: 4.5,
                   decoration: BoxDecoration(
                       color: c.textDisabled,
                       borderRadius: BorderRadius.circular(999))),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 23),
             Text('مهمة جديدة',
                 style: TextStyle(
-                    fontSize: 20, fontWeight: FontWeight.w700, color: c.text)),
-            const SizedBox(height: 16),
+                    fontSize: 23, fontWeight: FontWeight.w700, color: c.text)),
+            const SizedBox(height: 18.5),
             TextField(
               controller: _title,
               style: TextStyle(color: c.text),
@@ -453,7 +453,7 @@ class _AddTaskSheetState extends State<_AddTaskSheet> {
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 18.5),
             PillButton(
               label: 'حفظ المهمة',
               icon: Icons.check_rounded,

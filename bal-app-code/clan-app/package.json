@@ -14,7 +14,7 @@
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "seed": "node prisma/seed.js",
-    "test": "AI_LIMITS_RELAXED=1 node test/phase0.test.mjs && AI_LIMITS_RELAXED=1 node test/google-auth.test.mjs && AI_LIMITS_RELAXED=1 node test/focus.test.mjs && AI_LIMITS_RELAXED=1 node test/task.test.mjs && AI_LIMITS_RELAXED=1 node test/achievement.test.mjs && AI_LIMITS_RELAXED=1 node test/owner-check.test.mjs && AI_LIMITS_RELAXED=1 node test/video-game.test.mjs && AI_LIMITS_RELAXED=1 node test/chat.test.mjs && AI_LIMITS_RELAXED=1 node test/alarm.test.mjs && AI_LIMITS_RELAXED=1 node test/journal.test.mjs && AI_LIMITS_RELAXED=1 node test/ai.test.mjs && AI_LIMITS_RELAXED=1 node test/ai-rules.test.mjs && AI_LIMITS_RELAXED=1 node test/scale.test.mjs && AI_LIMITS_RELAXED=1 node test/integration.test.mjs && AI_LIMITS_RELAXED=1 node --test test/checkin-loop.test.mjs && AI_LIMITS_RELAXED=1 node --import ./test/checkin-reply.setup.mjs --test test/checkin-reply.test.mjs && AI_LIMITS_RELAXED=1 node --import ./test/dream-bootstrap.setup.mjs --test test/dream-bootstrap.test.mjs && node test/dart-sanity.mjs && AI_LIMITS_RELAXED=1 node --test test/checkin-timing.test.mjs",
+    "test": "AI_LIMITS_RELAXED=1 node test/phase0.test.mjs && AI_LIMITS_RELAXED=1 node test/google-auth.test.mjs && AI_LIMITS_RELAXED=1 node test/focus.test.mjs && AI_LIMITS_RELAXED=1 node test/task.test.mjs && AI_LIMITS_RELAXED=1 node test/achievement.test.mjs && AI_LIMITS_RELAXED=1 node test/owner-check.test.mjs && AI_LIMITS_RELAXED=1 node test/video-game.test.mjs && AI_LIMITS_RELAXED=1 node test/chat.test.mjs && AI_LIMITS_RELAXED=1 node test/alarm.test.mjs && AI_LIMITS_RELAXED=1 node test/journal.test.mjs && AI_LIMITS_RELAXED=1 node test/ai.test.mjs && AI_LIMITS_RELAXED=1 node test/ai-rules.test.mjs && AI_LIMITS_RELAXED=1 node test/scale.test.mjs && AI_LIMITS_RELAXED=1 node test/integration.test.mjs && AI_LIMITS_RELAXED=1 node --test test/checkin-loop.test.mjs && AI_LIMITS_RELAXED=1 node --import ./test/checkin-reply.setup.mjs --test test/checkin-reply.test.mjs && AI_LIMITS_RELAXED=1 node --import ./test/dream-bootstrap.setup.mjs --test test/dream-bootstrap.test.mjs && node test/dart-sanity.mjs && node --test test/ui-scale.test.mjs && AI_LIMITS_RELAXED=1 node --test test/checkin-timing.test.mjs",
     "test:owner": "AI_LIMITS_RELAXED=1 node test/owner-check.test.mjs",
     "test:chat": "AI_LIMITS_RELAXED=1 node test/chat.test.mjs",
     "test:alarm": "AI_LIMITS_RELAXED=1 node test/alarm.test.mjs",
@@ -49,7 +49,8 @@
     "test:integration": "AI_LIMITS_RELAXED=1 node test/integration.test.mjs",
     "test:checkin": "AI_LIMITS_RELAXED=1 node --test test/checkin-loop.test.mjs && AI_LIMITS_RELAXED=1 node --import ./test/checkin-reply.setup.mjs --test test/checkin-reply.test.mjs && AI_LIMITS_RELAXED=1 node --test test/checkin-timing.test.mjs",
     "test:dream": "AI_LIMITS_RELAXED=1 node --import ./test/dream-bootstrap.setup.mjs --test test/dream-bootstrap.test.mjs",
-    "test:app": "node test/dart-sanity.mjs"
+    "test:app": "node test/dart-sanity.mjs && node --test test/ui-scale.test.mjs",
+    "ui:scale": "node scripts/scale-ui.mjs"
   },
   "prisma": {
     "schema": "prisma/schema.prisma",

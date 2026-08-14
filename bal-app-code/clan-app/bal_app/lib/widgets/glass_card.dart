@@ -127,7 +127,7 @@ class Pill extends StatelessWidget {
     final bg = color ?? c.surfaceElevated;
     final fg = textColor ?? c.text;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 11.5, vertical: 6),
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(AppTheme.radiusPill),
@@ -137,8 +137,8 @@ class Pill extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[
-            Icon(icon, size: 13, color: fg),
-            const SizedBox(width: 4),
+            Icon(icon, size: 15, color: fg),
+            const SizedBox(width: 4.5),
           ],
           Text(text,
               style: TextStyle(fontSize: fontSize, color: fg, fontWeight: FontWeight.w500)),

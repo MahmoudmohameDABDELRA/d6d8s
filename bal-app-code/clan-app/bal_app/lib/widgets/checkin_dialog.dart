@@ -266,15 +266,15 @@ class _CheckInDialogState extends State<CheckInDialog> {
       child: Row(
         children: [
           Container(
-            width: 42,
-            height: 42,
+            width: 48.5,
+            height: 48.5,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: LinearGradient(
                 colors: [c.primary, c.primary.withValues(alpha: 0.7)],
               ),
             ),
-            child: Icon(Icons.favorite_rounded, color: c.onPrimary, size: 21),
+            child: Icon(Icons.favorite_rounded, color: c.onPrimary, size: 24),
           ),
           const SizedBox(width: AppTheme.spaceMd),
           Expanded(
@@ -284,17 +284,17 @@ class _CheckInDialogState extends State<CheckInDialog> {
                 Text(
                   _title,
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: 18.5,
                     fontWeight: FontWeight.w700,
                     color: c.text,
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 2.5),
                 Text(
                   widget.prompt.task.title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 12.5, color: c.textSecondary),
+                  style: TextStyle(fontSize: 14.5, color: c.textSecondary),
                 ),
               ],
             ),
@@ -309,7 +309,7 @@ class _CheckInDialogState extends State<CheckInDialog> {
       return Padding(
         padding: const EdgeInsets.all(AppTheme.spaceXxxl),
         child: Center(
-          child: CircularProgressIndicator(color: c.primary, strokeWidth: 2.5),
+          child: CircularProgressIndicator(color: c.primary, strokeWidth: 3),
         ),
       );
     }
@@ -352,7 +352,16 @@ class _CheckInDialogState extends State<CheckInDialog> {
           horizontal: AppTheme.spaceLg,
           vertical: AppTheme.spaceMd,
         ),
-        constraints: const BoxConstraints(maxWidth: 320),
+        /**
+         * ️ نسبة من الشاشة مش رقم ثابت.
+         *
+         *    كانت `maxWidth: 320` وبعد التكبير بقت 368 — أوسع من
+         *    المساحة المتاحة على شاشة 360 بكسل بـ 82 بكسل، فالفقاعة
+         *    كانت هتتقص. النسبة بتشتغل على كل المقاسات.
+         */
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.sizeOf(context).width * 0.72,
+        ),
         decoration: BoxDecoration(
           color: bg,
           borderRadius: BorderRadius.circular(AppTheme.radiusLg),
@@ -367,23 +376,23 @@ class _CheckInDialogState extends State<CheckInDialog> {
           children: [
             if (m.isSystem)
               Padding(
-                padding: const EdgeInsets.only(bottom: 4),
+                padding: const EdgeInsets.only(bottom: 4.5),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(Icons.info_outline_rounded,
-                        size: 13, color: c.textDisabled),
-                    const SizedBox(width: 4),
+                        size: 15, color: c.textDisabled),
+                    const SizedBox(width: 4.5),
                     Text(
                       'رسالة من التطبيق',
-                      style: TextStyle(fontSize: 11, color: c.textDisabled),
+                      style: TextStyle(fontSize: 12.5, color: c.textDisabled),
                     ),
                   ],
                 ),
               ),
             Text(
               m.text,
-              style: TextStyle(fontSize: 14.5, height: 1.5, color: fg),
+              style: TextStyle(fontSize: 16.5, height: 1.5, color: fg),
             ),
           ],
         ),
@@ -408,13 +417,13 @@ class _CheckInDialogState extends State<CheckInDialog> {
           mainAxisSize: MainAxisSize.min,
           children: [
             SizedBox(
-              width: 14,
-              height: 14,
-              child: CircularProgressIndicator(strokeWidth: 2, color: c.primary),
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2.5, color: c.primary),
             ),
             const SizedBox(width: AppTheme.spaceSm),
             Text('بيكتب…',
-                style: TextStyle(fontSize: 13, color: c.textSecondary)),
+                style: TextStyle(fontSize: 15, color: c.textSecondary)),
           ],
         ),
       ),
@@ -431,7 +440,7 @@ class _CheckInDialogState extends State<CheckInDialog> {
       color: c.danger.withValues(alpha: 0.12),
       child: Text(
         _error!,
-        style: TextStyle(fontSize: 12.5, color: c.danger),
+        style: TextStyle(fontSize: 14.5, color: c.danger),
       ),
     );
   }
@@ -452,10 +461,10 @@ class _CheckInDialogState extends State<CheckInDialog> {
                   minLines: 1,
                   maxLength: 1000,
                   textInputAction: TextInputAction.newline,
-                  style: TextStyle(fontSize: 14.5, color: c.text),
+                  style: TextStyle(fontSize: 16.5, color: c.text),
                   decoration: InputDecoration(
                     hintText: 'اكتب اللي حصل…',
-                    hintStyle: TextStyle(color: c.textDisabled, fontSize: 14),
+                    hintStyle: TextStyle(color: c.textDisabled, fontSize: 16),
                     counterText: '',
                     filled: true,
                     fillColor: c.surface,
@@ -495,7 +504,7 @@ class _CheckInDialogState extends State<CheckInDialog> {
               child: Text(
                 // بعد ما يرد، الخروج بقى «تمام» مش «مش دلوقتي»
                 replied ? 'تمام، شكراً' : 'مش دلوقتي',
-                style: TextStyle(color: c.textSecondary, fontSize: 13.5),
+                style: TextStyle(color: c.textSecondary, fontSize: 15.5),
               ),
             ),
           ),
