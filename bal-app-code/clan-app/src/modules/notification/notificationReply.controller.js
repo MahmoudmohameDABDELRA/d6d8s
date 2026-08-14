@@ -11,6 +11,11 @@
  *  GET  /api/notifications/:id/thread
  *   → المحادثة كاملة (لو المستخدم قفل البوب-أب وفتحه تاني).
  *
+ *  POST /api/notifications/checkin/open   { taskId }
+ *   → يفتح خيط اطمئنان لمهمة **من غير ما يستنى الجوب**.
+ *     التطبيق عارف إن المهمة من 5 لـ 6، فبيفتح البوب-أب الساعة 6
+ *     بنفسه — والـ endpoint ده بيديله إشعار يرد عليه.
+ *
  *  ── الفرق عن /api/task-checkin ──
  *    ده بمصادقة **المستخدم** (JWT) ومربوط بإشعار حقيقي في القاعدة،
  *    فالسياق كامل: المهمة + الهدف + الحلم + المحادثة السابقة.
@@ -241,6 +246,102 @@ export const replyToNotification = asyncHandler(async (req, res) => {
 });
 
 // ════════════════════════════════════════════════
+//  POST /api/notifications/checkin/open
+// ════════════════════════════════════════════════
+
+/**
+ * يفتح (أو يرجّع) خيط اطمئنان لمهمة.
+ *
+ * ️ ليه محتاجينه:
+ *    البوب-أب بيطلع في التطبيق **لحظة ما وقت المهمة يخلص** — التطبيق
+ *    عارف الميعاد بنفسه ومش مستني حد. لكن الرد لازم يتبعت على إشعار
+ *    موجود في القاعدة. لو الجوب لسه ماشتغلش (أو Redis واقع)، مكانش
+ *    فيه إشعار، وكلام المستخدم كان هيضيع.
+ *
+ * ️ Idempotent: لو فيه إشعار اطمئنان للمهمة دي أصلاً بنرجّعه بدل ما
+ *    نخلق تاني — عشان الخيط والمحادثة يفضلوا مكان واحد.
+ */
+export const openTaskCheckIn = asyncHandler(async (req, res) => {
+  const userId = req.user.userId;
+  const { taskId } = req.body ?? {};
+
+  if (typeof taskId !== 'string' || !taskId.trim()) {
+    throw badRequest('taskId مطلوب', 'TASK_ID_REQUIRED');
+  }
+
+  // الملكية: المهمة لازم تكون بتاعته
+  const task = await prisma.task.findFirst({
+    where: { id: taskId, userId },
+    select: { id: true, title: true },
+  });
+  if (!task) throw notFound('المهمة غير موجودة', 'TASK_NOT_FOUND');
+
+  // موجود خلاص؟ رجّعه — مفيش خيطين لنفس المهمة
+  const existing = await prisma.notification.findFirst({
+    where: {
+      userId,
+      type: 'TASK_CHECKIN',
+      data: { path: ['taskId'], equals: taskId },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  if (existing) {
+    const messages = await thread.getThread(existing.id);
+    return res.json({
+      success: true,
+      created: false,
+      notificationId: existing.id,
+      question: existing.body,
+      messages,
+      turnsLeft: Math.max(
+        thread.MAX_USER_TURNS - thread.countUserTurns(messages),
+        0,
+      ),
+    });
+  }
+
+  /**
+   * ️ نص السؤال بييجي من التطبيق (`question`) لأنه هو اللي عرضه
+   *    للمستخدم فعلاً — لازم اللي اتخزن يطابق اللي اتشاف. لو مبعتش،
+   *    بنحط نص محايد.
+   */
+  const question =
+    typeof req.body?.question === 'string' && req.body.question.trim()
+      ? req.body.question.trim().slice(0, 400)
+      : `إيه أخبار «${task.title}»؟ عملت فيها إيه؟`;
+
+  const notification = await prisma.notification.create({
+    data: {
+      userId,
+      type: 'TASK_CHECKIN',
+      title: 'اطمئنان',
+      body: question,
+      /** ️ isRead=true لأن المستخدم شايفه دلوقتي في البوب-أب */
+      isRead: true,
+      readAt: new Date(),
+      data: {
+        taskId,
+        taskTitle: task.title,
+        source: 'CLIENT',
+        reason: 'CLIENT_SCHEDULE_END',
+        kind: 'checkin',
+        canReply: true,
+      },
+    },
+  });
+
+  return res.status(201).json({
+    success: true,
+    created: true,
+    notificationId: notification.id,
+    question: notification.body,
+    messages: [],
+    turnsLeft: thread.MAX_USER_TURNS,
+  });
+});
+
+// ════════════════════════════════════════════════
 //  GET /api/notifications/:id/thread
 // ════════════════════════════════════════════════
 
@@ -268,4 +369,4 @@ export const getNotificationThread = asyncHandler(async (req, res) => {
   });
 });
 
-export default { replyToNotification, getNotificationThread };
+export default { replyToNotification, getNotificationThread, openTaskCheckIn };

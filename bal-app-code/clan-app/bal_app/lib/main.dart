@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'core/app_state.dart';
+import 'core/checkin/checkin_watcher.dart';
 import 'core/theme/app_theme.dart';
 import 'screens/auth/auth_gate.dart';
 import 'shell/main_shell.dart';
@@ -17,8 +18,16 @@ class BalApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => AppState()..bootstrap(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AppState()..bootstrap()),
+        /**
+         * ⭐ مراقب مواعيد المهام — بيفتح بوب-أب الاطمئنان تلقائياً
+         *    لحظة ما وقت المهمة يخلص. عايش هنا عشان يفضل حي مهما
+         *    اتنقل المستخدم بين الشاشات.
+         */
+        ChangeNotifierProvider(create: (_) => CheckInWatcher()),
+      ],
       child: Consumer<AppState>(
         builder: (context, state, _) {
           return MaterialApp(

@@ -87,6 +87,13 @@ abstract final class ApiEndpoints {
   static const clansPrivateJoin = '/clans/private/join';
   static const myClans = '/clans/my-clans';
 
+  // ── الإشعارات والبوب-أب ──
+  static const notifications = '/notifications';
+  static String notificationReply(String id) => '/notifications/$id/reply';
+  static String notificationThread(String id) => '/notifications/$id/thread';
+  static String notificationRead(String id) => '/notifications/$id/read';
+  static const checkinOpen = '/notifications/checkin/open';
+
   // ── الـ AI ──
   static const aiMessage = '/ai/message';
   static const aiConversations = '/ai/conversations';

@@ -36,6 +36,7 @@ import { state } from './checkin-reply.mocks.mjs';
 const {
   replyToNotification,
   getNotificationThread,
+  openTaskCheckIn,
 } = await import('../src/modules/notification/notificationReply.controller.js');
 
 // ── تطبيق اختبار صغير: مستخدم ثابت + معالج أخطاء ──
@@ -47,6 +48,7 @@ app.use((req, _res, next) => {
   req.user = { userId: USER_ID };
   next();
 });
+app.post('/api/notifications/checkin/open', openTaskCheckIn);
 app.post('/api/notifications/:id/reply', replyToNotification);
 app.get('/api/notifications/:id/thread', getNotificationThread);
 app.use((err, _req, res, _next) => {
@@ -170,4 +172,90 @@ test('GET /thread لإشعار مش بتاعي → 404', async () => {
     `${base}/api/notifications/notif-of-someone-else/thread`,
   );
   assert.equal(res.status, 404);
+});
+
+// ════════════════════════════════════════════════
+//  POST /api/notifications/checkin/open
+//  البوب-أب طلع محلياً الساعة 6 — محتاج خيط يرد عليه
+// ════════════════════════════════════════════════
+
+const openCheckin = async (body) => {
+  const res = await fetch(`${base}/api/notifications/checkin/open`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  return { status: res.status, body: await res.json() };
+};
+
+test('فتح خيط لمهمة بلا إشعار → إشعار جديد', async () => {
+  state.reset();
+
+  const res = await openCheckin({
+    taskId: 'task-breakfast',
+    question: 'إيه أخبار «الفطار»؟ عملت فيها إيه؟',
+  });
+
+  assert.equal(res.status, 201);
+  assert.equal(res.body.created, true);
+  assert.ok(res.body.notificationId, 'لازم يرجع معرّف يرد عليه');
+
+  // ️ النص المخزّن لازم يطابق اللي المستخدم شافه في البوب-أب
+  assert.equal(res.body.question, 'إيه أخبار «الفطار»؟ عملت فيها إيه؟');
+
+  const created = state.createdNotifications[0];
+  assert.equal(created.data.canReply, true, 'من غيرها الرد هيترفض بـ 403');
+  assert.equal(created.data.taskId, 'task-breakfast');
+  assert.equal(created.data.source, 'CLIENT');
+  assert.equal(created.isRead, true, 'المستخدم شايفه دلوقتي في البوب-أب');
+});
+
+test('فتح خيط لمهمة ليها إشعار → نفس الإشعار مش جديد', async () => {
+  state.reset();
+
+  const res = await openCheckin({ taskId: 'task-1' });
+
+  assert.equal(res.status, 200);
+  assert.equal(res.body.created, false, 'ممنوع خيطين لنفس المهمة');
+  assert.equal(res.body.notificationId, 'notif-checkin');
+  assert.equal(
+    state.createdNotifications.length,
+    0,
+    'ماينفعش نخلق إشعار والموجود كفاية',
+  );
+});
+
+test('فتح خيط لمهمة مش بتاعتي → 404', async () => {
+  state.reset();
+  const res = await openCheckin({ taskId: 'task-of-someone-else' });
+  assert.equal(res.status, 404);
+  assert.equal(res.body.code, 'TASK_NOT_FOUND');
+});
+
+test('فتح خيط بلا taskId → 400', async () => {
+  state.reset();
+  assert.equal((await openCheckin({})).status, 400);
+  assert.equal((await openCheckin({ taskId: '' })).status, 400);
+  assert.equal((await openCheckin({ taskId: 42 })).status, 400);
+});
+
+test('الفلو الكامل: البوب-أب يفتح خيط ويرد فيه', async () => {
+  state.reset();
+  state.geminiReply = 'الله! فطرت كويس بقى؟ 👏';
+
+  // 1) الساعة 6 — التطبيق فتح البوب-أب وبعت السؤال
+  const opened = await openCheckin({
+    taskId: 'task-breakfast',
+    question: 'إيه أخبار «الفطار»؟',
+  });
+  assert.equal(opened.status, 201);
+
+  // 2) المستخدم كتب اللي حصل
+  const replied = await post(opened.body.notificationId, {
+    text: 'فطرت وخرجت بدري',
+  });
+
+  assert.equal(replied.status, 200, 'الرد لازم يعدي على الخيط الجديد');
+  assert.equal(replied.body.source, 'AI');
+  assert.match(replied.body.reply, /فطرت/);
 });

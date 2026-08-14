@@ -12,6 +12,7 @@ export const state = {
   geminiError: null,
   lastGeminiArgs: null,
   updatedNotifications: [],
+  createdNotifications: [],
 
   reset() {
     this.geminiCalls = 0;
@@ -19,6 +20,15 @@ export const state = {
     this.geminiError = null;
     this.lastGeminiArgs = null;
     this.updatedNotifications = [];
+    this.createdNotifications = [];
+    /**
+     * ️ عزل الاختبارات: أي إشعار اتخلق أثناء اختبار لازم يختفي قبل
+     *    اللي بعده. من غير ده اختبار «فتح خيط جديد» بيسيب إشعار
+     *    فيفشل الاختبار اللي بعده لما يلاقيه موجود.
+     */
+    for (const id of Object.keys(NOTIFICATIONS)) {
+      if (!BASE_NOTIFICATION_IDS.includes(id)) delete NOTIFICATIONS[id];
+    }
   },
 };
 
@@ -59,7 +69,20 @@ const NOTIFICATIONS = {
   },
 };
 
+/** الإشعارات الأساسية — أي حاجة غيرها بتتمسح عند reset() */
+const BASE_NOTIFICATION_IDS = Object.keys(NOTIFICATIONS);
+
 const TASKS = {
+  /** مهمة الفطار — مالهاش إشعار، لاختبار فتح خيط جديد */
+  'task-breakfast': {
+    id: 'task-breakfast',
+    userId: 'user-1',
+    title: 'الفطار',
+    isCompleted: false,
+    startTime: '05:00',
+    endTime: '06:00',
+    goalStep: null,
+  },
   'task-1': {
     id: 'task-1',
     userId: 'user-1',
@@ -88,10 +111,28 @@ const USERS = {
 export const prismaMock = {
   notification: {
     findFirst: async ({ where }) => {
+      // بحث بالمهمة (openTaskCheckIn) — مش بالـ id
+      if (!where.id && where.type === 'TASK_CHECKIN') {
+        const taskId = where.data?.equals;
+        const found = Object.values(NOTIFICATIONS).find(
+          (n) => n.userId === where.userId && n.data?.taskId === taskId,
+        );
+        return found ? { ...found } : null;
+      }
       const n = NOTIFICATIONS[where.id];
       if (!n) return null;
       if (where.userId && n.userId !== where.userId) return null;
       return { ...n };
+    },
+    create: async ({ data }) => {
+      const created = {
+        id: `notif-new-${state.createdNotifications.length + 1}`,
+        createdAt: new Date(),
+        ...data,
+      };
+      state.createdNotifications.push(created);
+      NOTIFICATIONS[created.id] = created;
+      return created;
     },
     update: async ({ where, data }) => {
       state.updatedNotifications.push({ id: where.id, data });
@@ -106,6 +147,8 @@ export const prismaMock = {
       return { ...t };
     },
   },
+  /** مهمة بلا إشعار — لاختبار فتح خيط جديد */
+  __addTask: (t) => { TASKS[t.id] = t; },
   user: {
     findUnique: async ({ where }) => USERS[where.id] ?? null,
   },

@@ -9,6 +9,7 @@ import {
 } from './notification.controller.js';
 import {
   getNotificationThread,
+  openTaskCheckIn,
   replyToNotification,
 } from './notificationReply.controller.js';
 import {
@@ -40,6 +41,12 @@ const replyLimiter = rateLimit({
   standardHeaders: 'draft-7',
   legacyHeaders: false,
 });
+
+/**
+ * ️ لازم تسبق `/:id/reply` — غير كده Express هيفسّر «checkin»
+ *    كأنه قيمة الـ :id.
+ */
+router.post('/checkin/open', replyLimiter, openTaskCheckIn);
 
 router.post('/:id/reply', replyLimiter, replyToNotification);
 router.get('/:id/thread', getNotificationThread);

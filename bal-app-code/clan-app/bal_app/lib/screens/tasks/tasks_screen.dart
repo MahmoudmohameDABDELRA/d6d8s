@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../core/checkin/checkin_watcher.dart';
 import '../../core/network/api_client.dart';
 import '../../core/network/api_endpoints.dart';
 import '../../core/theme/app_colors.dart';
@@ -30,13 +32,23 @@ class _TasksScreenState extends State<TasksScreen> {
     try {
       final res = await ApiClient.instance.get(ApiEndpoints.tasks);
       final list = res['tasks'] as List? ?? res['data'] as List? ?? [];
+      final tasks = list
+          .whereType<Map<String, dynamic>>()
+          .map(BalTask.fromJson)
+          .toList();
+
       setState(() {
-        _tasks = list
-            .whereType<Map<String, dynamic>>()
-            .map(BalTask.fromJson)
-            .toList();
+        _tasks = tasks;
         _loading = false;
       });
+
+      /**
+       * ⭐ نغذّي المراقب بالمواعيد.
+       *
+       * ️ من غير السطر ده المراقب مش هيعرف إن مهمة الفطار من 5 لـ 6،
+       *    والبوب-أب عمره ما هيطلع. ده الوصلة بين البيانات والفيتشر.
+       */
+      if (mounted) context.read<CheckInWatcher>().updateTasks(tasks);
     } catch (e) {
       setState(() {
         _error = e.toString();
