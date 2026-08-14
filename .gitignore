@@ -32,3 +32,4 @@ coverage/
 dist/
 *.rdb
 appendonly.aof
+
