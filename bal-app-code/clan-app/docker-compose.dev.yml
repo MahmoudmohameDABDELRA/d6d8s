@@ -1,0 +1,59 @@
+# ════════════════════════════════════════════════════════════════════
+#  بال — التطوير المحلي: قاعدة البيانات والكاش بس
+# ════════════════════════════════════════════════════════════════════
+#
+#  الاستخدام:
+#    docker compose -f docker-compose.dev.yml up -d
+#
+#  ليه ملف منفصل عن docker-compose.yml؟
+#
+#   الملف الأصلي للإنتاج: فيه pgbouncer (مجمّع اتصالات لعشرة آلاف
+#   مستخدم) وبيبني صور api/worker/game-server جوه دوكر.
+#
+#   في التطوير المحلي ده كله زيادة:
+#     · pgbouncer — الـ .env بيوصل ببوستجرس مباشرة على 5432،
+#       فالمجمّع مش مستخدم أصلاً. وكمان نسخته كانت مش موجودة
+#       على Docker Hub فكان بيوقف التشغيل كله.
+#     · api/worker — بتشغّلهم بـ npm run dev و npm run worker
+#       عشان تشوف التعديلات فوراً بلا إعادة بناء صورة.
+#
+#   فالنتيجة: خدمتين بس، وبتقوم في ثواني.
+# ════════════════════════════════════════════════════════════════════
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: bal_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${PG_USER:-root}
+      POSTGRES_PASSWORD: ${PG_PASSWORD:-secretpassword}
+      POSTGRES_DB: ${PG_DATABASE:-clan_app_db}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PG_USER:-root} -d ${PG_DATABASE:-clan_app_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: bal_redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redisdata:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata:
+  redisdata:

@@ -1,7 +1,9 @@
-version: '3.9'
-
 # ════════════════════════════════════════════════════════════════════════════════
 #  Clan App — Full Stack Cloud Orchestration (Docker Compose)
+#
+#   ده ملف **الإنتاج** — بيبني الصور ويشغّل pgbouncer.
+#     للتطوير المحلي استخدم:  docker compose -f docker-compose.dev.yml up -d
+#     (قاعدة بيانات وكاش بس — أسرع وأخف)
 # ════════════════════════════════════════════════════════════════════════════════
 #
 #  الخدمات:
@@ -38,7 +40,11 @@ services:
 
   # ── 2. PgBouncer Connection Pooler ──
   pgbouncer:
-    image: edoburu/pgbouncer:v1.22.1
+    # ️ كانت v1.22.1 — النسخة دي مش موجودة على Docker Hub خالص
+    #    (اتشالت)، فكان `docker compose up` بيقع من أول خطوة.
+    #    v1.25.2-p0 هي أحدث نسخة متاحة ومثبّتة عن قصد: `latest`
+    #    ممكن تتغير تحت رجلينا وتكسر الإنتاج بلا سابق إنذار.
+    image: edoburu/pgbouncer:v1.25.2-p0
     container_name: clan_pgbouncer
     restart: unless-stopped
     environment:

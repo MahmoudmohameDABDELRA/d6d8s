@@ -66,7 +66,7 @@ cd bal-app-code/clan-app
 cp .env.example .env        # وعبي القيم (DATABASE_URL, REDIS_URL, JWT...)
 npm install
 npm run prisma:generate
-docker compose up -d        # postgres + pgbouncer + redis (+ api/worker/game-server)
+docker compose -f docker-compose.dev.yml up -d   # postgres + redis
 npm run dev                 # أو node src/server.js
 ```
 
