@@ -174,7 +174,7 @@ class _CheckInDialogState extends State<CheckInDialog> {
       ApiEndpoints.checkinOpen,
       body: {
         'taskId': widget.prompt.task.id,
-        if (firstQuestion != null) 'question': firstQuestion,
+        ?'question': firstQuestion,
       },
     );
 

@@ -39,7 +39,7 @@ class ProgressRing extends StatelessWidget {
               valueColor: AlwaysStoppedAnimation(col),
             ),
           ),
-          if (center != null) center!,
+          ?center,
         ],
       ),
     );

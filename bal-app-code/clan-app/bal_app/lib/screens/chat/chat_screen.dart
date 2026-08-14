@@ -193,29 +193,34 @@ class _ChatScreenState extends State<ChatScreen> {
                 icon: Icons.person_add_alt_1_rounded,
                 size: 43.5,
                 onPressed: () async {
+                  /// ️ نمسك الـ messenger **قبل** الـ await.
+                  ///
+                  ///    الكود القديم كان بيعمل `ScaffoldMessenger.of(context)`
+                  ///    بعد الـ await، محمي بـ `mounted` بتاع الـ State — لكن
+                  ///    الـ context هنا جاي من Builder داخلي، فالحماية كانت
+                  ///    على ويدجت والاستخدام على ويدجت تانية. لو الشاشة
+                  ///    اتقفلت أثناء الطلب، ده كراش.
+                  final messenger = ScaffoldMessenger.of(context);
                   try {
                     final res = await ApiClient.instance
                         .post(ApiEndpoints.chatStart, body: {
                       'targetUserId': u['id'],
                       'text': 'أهلاً! عايز أتعرف عليك',
                     });
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                            content: Text(
-                                res['isFriendRequest'] == true
-                                    ? 'اتبعت طلب صداقة 💌'
-                                    : 'اتبعت الرسالة')),
-                      );
-                    }
+                    if (!mounted) return;
+                    messenger.showSnackBar(
+                      SnackBar(
+                          content: Text(res['isFriendRequest'] == true
+                              ? 'اتبعت طلب صداقة 💌'
+                              : 'اتبعت الرسالة')),
+                    );
                   } catch (e) {
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                            content: Text(
-                                '${e.toString().replaceAll('Exception: ', '')}')),
-                      );
-                    }
+                    if (!mounted) return;
+                    messenger.showSnackBar(
+                      SnackBar(
+                          content: Text(
+                              e.toString().replaceAll('Exception: ', ''))),
+                    );
                   }
                 },
               ),
