@@ -6,8 +6,18 @@ import '../models/task.dart';
 /// the app. The backend holds the real API key and forwards the
 /// conversation to the AI model.
 class CheckInService {
-  /// Base URL of your existing backend, e.g. https://api.yourapp.com
-  static const String _baseUrl = 'https://api.yourapp.com';
+  /// Base URL of the Bal backend (clan-app).
+  ///
+  /// Override at build time with:
+  ///   flutter run --dart-define=API_BASE_URL=https://api.yourdomain.com
+  ///
+  /// Defaults to the Android emulator's host loopback; for a physical
+  /// device put your machine's LAN IP instead. On web, use the same
+  /// origin as the page (relative URLs) — see ApiEndpoints in bal_app.
+  static const String _baseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'http://10.0.2.2:3000', // Android emulator → host
+  );
   static const String _endpoint = '$_baseUrl/api/task-checkin';
 
   /// Must match APP_SHARED_SECRET on the server. Proves the request came

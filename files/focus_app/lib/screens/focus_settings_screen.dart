@@ -4,6 +4,7 @@ import '../widgets/bottom_nav_bar.dart';
 import '../widgets/pill_buttons.dart';
 import '../widgets/setting_stepper_card.dart';
 import 'group_session_screen.dart';
+import 'focus_session_screen.dart';
 
 class FocusSettingsScreen extends StatefulWidget {
   const FocusSettingsScreen({super.key});
@@ -115,7 +116,16 @@ class _FocusSettingsScreenState extends State<FocusSettingsScreen> {
                 PrimaryPillButton(
                   label: 'ابدأ جلسة فردية',
                   trailingIcon: Icons.play_arrow,
-                  onTap: () {},
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => FocusSessionScreen(
+                          focusMinutes: focusMinutes,
+                          taskTitle: 'رحلة تعلم Dart',
+                        ),
+                      ),
+                    );
+                  },
                 ),
                 const SizedBox(height: 14),
                 OutlinePillButton(

@@ -1,4 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+
+import '../models/task.dart';
+import '../services/checkin_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/badge_pill.dart';
 import '../widgets/bottom_nav_bar.dart';
@@ -6,17 +11,37 @@ import '../widgets/circular_timer.dart';
 import '../widgets/pill_buttons.dart';
 
 class FocusSessionScreen extends StatefulWidget {
-  const FocusSessionScreen({super.key});
+  const FocusSessionScreen({
+    super.key,
+    this.focusMinutes = 30,
+    this.taskTitle = 'رحلة تعلم Dart',
+  });
+
+  /// مدة جلسة التركيز بالدقائق (بتوصل من شاشة الإعدادات)
+  final int focusMinutes;
+
+  /// اسم المهمة اللي بيتركّز عليها المستخدم — بتروح للـ AI في الـ check-in
+  final String taskTitle;
 
   @override
   State<FocusSessionScreen> createState() => _FocusSessionScreenState();
 }
 
 class _FocusSessionScreenState extends State<FocusSessionScreen> {
-  // 25:00 out of a 30 min session, ~83% remaining -> ring nearly full,
-  // matching the small gap near the top of the screenshot.
-  static const int totalSeconds = 30 * 60;
-  int remainingSeconds = 25 * 60;
+  late final int totalSeconds = widget.focusMinutes * 60;
+  late int remainingSeconds = totalSeconds;
+
+  Timer? _timer;
+  bool _running = false;
+
+  /// معرّف مؤقت للتجربة — في التطبيق الكامل بييجي من حساب المستخدم
+  static const String _demoUserId = 'local-user';
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
 
   String get _formatted {
     final m = (remainingSeconds ~/ 60).toString().padLeft(2, '0');
@@ -24,10 +49,75 @@ class _FocusSessionScreenState extends State<FocusSessionScreen> {
     return '$m:$s';
   }
 
+  double get _progress =>
+      totalSeconds == 0 ? 0 : remainingSeconds / totalSeconds;
+
+  void _start() {
+    setState(() => _running = true);
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) return;
+      setState(() {
+        if (remainingSeconds > 1) {
+          remainingSeconds -= 1;
+        } else {
+          remainingSeconds = 0;
+          timer.cancel();
+          _running = false;
+          _onSessionComplete();
+        }
+      });
+    });
+  }
+
+  void _pause() {
+    _timer?.cancel();
+    setState(() => _running = false);
+  }
+
+  /// لما الجلسة تخلص: نسأل المستخدم «عملت إيه؟» ونبعت للباكند
+  Future<void> _onSessionComplete() async {
+    final reply = await showDialog<String>(
+      context: context,
+      builder: (_) => const _CheckInDialog(),
+    );
+    if (reply == null || reply.trim().isEmpty) return;
+
+    try {
+      final aiReply = await CheckInService.sendCheckIn(
+        task: AppTask(
+          id: 'focus-${DateTime.now().millisecondsSinceEpoch}',
+          title: widget.taskTitle,
+          scheduledTime: DateTime.now(),
+          durationMinutes: widget.focusMinutes,
+          isDone: true,
+        ),
+        userReply: reply.trim(),
+        userId: _demoUserId,
+      );
+      if (!mounted) return;
+      await showDialog<void>(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('رد رفيقك 🎉'),
+          content: Text(aiReply),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('تمام'),
+            ),
+          ],
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('ماقدرناش نوصل للسيرفر — تأكد إن الباكند شغال ($error)')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final progress = remainingSeconds / totalSeconds;
-
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
@@ -64,7 +154,7 @@ class _FocusSessionScreenState extends State<FocusSessionScreen> {
 
                 CircularTimerRing(
                   size: 280,
-                  progress: progress,
+                  progress: _progress,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -83,15 +173,15 @@ class _FocusSessionScreenState extends State<FocusSessionScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       CircleIconButton(
-                        icon: Icons.pause,
-                        onTap: () {},
+                        icon: _running ? Icons.pause : Icons.play_arrow,
+                        onTap: _running ? _pause : _start,
                       ),
                       Expanded(
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 14),
                           child: PrimaryPillButton(
-                            label: 'ابدأ التركيز',
-                            onTap: () {},
+                            label: _running ? 'إيقاف مؤقت' : 'ابدأ التركيز',
+                            onTap: _running ? _pause : _start,
                           ),
                         ),
                       ),
@@ -105,7 +195,7 @@ class _FocusSessionScreenState extends State<FocusSessionScreen> {
 
                 const SizedBox(height: 18),
 
-                // Small "current task" overlay chip.
+                // Chip المهمة الحالية
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   decoration: BoxDecoration(
@@ -116,7 +206,7 @@ class _FocusSessionScreenState extends State<FocusSessionScreen> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text('اليوم 2 من 7 · رحلة تعلم Dart', style: AppText.label),
+                      Text('اليوم 2 من 7 · ${widget.taskTitle}', style: AppText.label),
                       const SizedBox(width: 10),
                       Container(
                         width: 26,
@@ -150,6 +240,65 @@ class _FocusSessionScreenState extends State<FocusSessionScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// بوكس سؤال «عملت في المهمة إيه؟» — بيرجّع نص الرد اللي كتبه المستخدم
+class _CheckInDialog extends StatefulWidget {
+  const _CheckInDialog();
+
+  @override
+  State<_CheckInDialog> createState() => _CheckInDialogState();
+}
+
+class _CheckInDialogState extends State<_CheckInDialog> {
+  final TextEditingController _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    Navigator.of(context).pop(_controller.text.trim());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: AlertDialog(
+        title: const Text('خلصت الجلسة 🎉'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('عملت إيه في المهمة؟ واجهتك مشكلة؟'),
+            const SizedBox(height: 14),
+            TextField(
+              controller: _controller,
+              autofocus: true,
+              maxLength: 1000,
+              decoration: const InputDecoration(
+                hintText: 'اكتب ردك هنا...',
+                border: OutlineInputBorder(),
+              ),
+              onSubmitted: (_) => _submit(),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('مش دلوقتي'),
+          ),
+          FilledButton(
+            onPressed: _submit,
+            child: const Text('بعت لرفيقي'),
+          ),
+        ],
       ),
     );
   }

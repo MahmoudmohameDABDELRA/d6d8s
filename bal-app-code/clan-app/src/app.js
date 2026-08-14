@@ -40,6 +40,7 @@ import insightRoutes from './modules/insight/insight.routes.js';
 import humanRoutes from './modules/human/human.routes.js';
 import analyticsRoutes from './modules/analytics/analytics.routes.js';
 import socialRoutes from './modules/social/social.routes.js';
+import checkinRoutes from './modules/checkin/checkin.routes.js';
 
 const app = express();
 
@@ -236,6 +237,11 @@ app.use('/api/insights', insightRoutes);
 app.use('/api/human', humanRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/social', socialRoutes);
+
+// ── Task Check-In: POST /api/task-checkin ──
+// مُدمج هنا بعد إزالة سيرفيس checkin-backend المنفصل —
+// نفس البنية: Gemini + شخصية TASK_FOLLOWUP + حارس aiGuard + سجل Redis.
+app.use('/api', checkinRoutes);
 
 // ── الفرونت إند الرسمي: تطبيق Flutter (نسخة ويب) ──
 // يخدم build/web الناتج من clan_flutter_app على نفس نطاق الـ API

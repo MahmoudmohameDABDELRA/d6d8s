@@ -103,6 +103,12 @@ export const env = {
 
   // ── Prometheus Metrics Protection ──
   metricsToken: process.env.METRICS_TOKEN || '',
+
+  // ── Task Check-In (POST /api/task-checkin) ──
+  // سرّ مشترك يثبت أن الطلب جاي من تطبيقنا (App Identity) مش من سكربت عشوائي.
+  // التطبيق بيحمله في البناء عبر --dart-define=APP_SHARED_SECRET=...
+  // لو مش مضبوط: الـ endpoint يرجع 503 بأمان بدل ما يشتغل بلا حماية.
+  appSharedSecret: process.env.APP_SHARED_SECRET || '',
 };
 
 export default env;
