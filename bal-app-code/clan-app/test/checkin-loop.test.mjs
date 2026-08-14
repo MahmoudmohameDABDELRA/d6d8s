@@ -199,3 +199,33 @@ test('realtime: emitToUser فايل-أوبن من غير io ولا Redis', async
   assert.equal(await realtime.emitToUser(null, 'e', {}), false);
   assert.equal(await realtime.emitToUser('u1', null, {}), false);
 });
+
+// ════════════════════════════════════════════════
+test('journeyPlanner: ترتيب الأيام قبل إعادة الترقيم', async () => {
+  /**
+   * ️ باج حقيقي: النماذج بترجع الأيام مش مرتبة أحياناً، والنسخة
+   *    القديمة كانت بتعيد الترقيم بالـ index على طول — فالمستخدم
+   *    كان ممكن يبدأ رحلته باليوم التالت.
+   */
+  const src = await import('node:fs').then((fs) =>
+    fs.promises.readFile(
+      new URL('services/journeyPlanner.service.js', root),
+      'utf8',
+    ),
+  );
+
+  const normalizeBlock = src.slice(
+    src.indexOf('const days = data.days'),
+    src.indexOf('if (days.length === 0)'),
+  );
+
+  assert.match(
+    normalizeBlock,
+    /\.sort\(\(a, b\) => a\.day - b\.day\)/,
+    'لازم ترتيب بالـ day قبل إعادة الترقيم',
+  );
+  assert.ok(
+    normalizeBlock.indexOf('.sort(') < normalizeBlock.lastIndexOf('day: i + 1'),
+    'الترتيب لازم يسبق إعادة الترقيم',
+  );
+});

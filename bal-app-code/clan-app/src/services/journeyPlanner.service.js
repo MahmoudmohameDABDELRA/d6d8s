@@ -57,7 +57,20 @@ export const generateJourney = async ({ username, dreamTitle, goalTitle, compani
     throw new Error('AI_INVALID_RESPONSE');
   }
 
-  // تطبيع صارم: أيام متسلسلة تبدأ من 1، عناوين نصية
+  /**
+   * تطبيع صارم: أيام متسلسلة تبدأ من 1، عناوين نصية.
+   *
+   * ⚠️ الترتيب قبل إعادة الترقيم **ضروري**، مش تجميل.
+   *
+   *    النماذج بترجع الأيام مش مرتبة أحياناً (خصوصاً مع الردود
+   *    الطويلة). النسخة القديمة كانت بتعيد الترقيم بالـ index
+   *    على طول، فلو Gemini رجّع [day3, day1, day2] كان بيتخزن
+   *    day3 كأنه اليوم الأول — يعني المستخدم يبدأ رحلته
+   *    بالميزانية العمومية قبل المقدمة.
+   *
+   *    بنرتّب بالـ day اللي النموذج حدده، وبعدين نعيد الترقيم
+   *    عشان نسدّ أي فجوات (1,2,5 → 1,2,3).
+   */
   const days = data.days
     .map((d, i) => ({
       day: Number(d.day) || i + 1,
@@ -65,6 +78,7 @@ export const generateJourney = async ({ username, dreamTitle, goalTitle, compani
       description: d.description ? String(d.description).trim() : null,
     }))
     .filter((d) => d.title.length > 0)
+    .sort((a, b) => a.day - b.day)
     .map((d, i) => ({ ...d, day: i + 1 }));
 
   if (days.length === 0) throw new Error('AI_INVALID_RESPONSE');
