@@ -221,7 +221,9 @@ class _TasksScreenState extends State<TasksScreen> {
             Text('يومك فاضي — أحلى حاجة',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: c.text)),
             const SizedBox(height: 8),
-            Text('مهام الجبل هتيجي لوحدها من رحلتك — وتقدر تضيف مهامك براحتك',
+            // ️ كانت بتقول «هتيجي لوحدها» وهي مش بتيجي إلا لما
+            //    المستخدم يوافق على جبله. الوعد الكاذب أسوأ من الصمت.
+            Text('لو مثبّت جبلك، مهام النهاردة بتنزل هنا لوحدها كل يوم — وتقدر تضيف مهامك براحتك',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: c.textSecondary)),
           ],

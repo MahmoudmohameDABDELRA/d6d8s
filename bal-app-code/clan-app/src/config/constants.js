@@ -280,6 +280,61 @@ export const SPECIALTIES = {
 /** كل التخصصات في مصفوفة واحدة — للتحقق السريع */
 export const ALL_SPECIALTIES = Object.values(SPECIALTIES).flat();
 
+/**
+ * الاسم العربي لكل تخصص.
+ *
+ * ️ مش تجميل واجهة: دي بتتحقن في برومبت مخطط الأحلام عشان الـ AI
+ *    يفهم مين اللي بيكلمه. `EXECUTIVE` مالهاش معنى في جملة عربية،
+ *    «مدير تنفيذي» ليها.
+ */
+export const SPECIALTY_LABELS = {
+  // STUDY
+  HIGH_SCHOOL: 'طالب ثانوي',
+  UNIVERSITY: 'طالب جامعي',
+  POSTGRAD: 'دراسات عليا',
+  RESEARCHER: 'باحث',
+  EXAM_PREP: 'بيحضّر لامتحان',
+  TEACHER: 'مدرّس',
+  // BUSINESS
+  ENTREPRENEUR: 'رائد أعمال',
+  FOUNDER: 'مؤسس شركة',
+  EXECUTIVE: 'مدير تنفيذي',
+  MANAGER: 'مدير',
+  MARKETING: 'تسويق',
+  SALES: 'مبيعات',
+  FINANCE: 'مالية',
+  ECOMMERCE: 'تجارة إلكترونية',
+  FREELANCER: 'شغل حر',
+  // TECH
+  SOFTWARE_DEV: 'مطوّر برمجيات',
+  AI_DATA: 'ذكاء اصطناعي وبيانات',
+  CYBERSECURITY: 'أمن سيبراني',
+  CIVIL_ARCH: 'مدني وعمارة',
+  MECH_ELEC: 'ميكانيكا وكهرباء',
+  DEVOPS: 'DevOps',
+  // HEALTH
+  PHYSICIAN: 'طبيب',
+  DENTIST: 'طبيب أسنان',
+  PHARMACIST: 'صيدلي',
+  NURSE: 'تمريض',
+  PHYSIOTHERAPY: 'علاج طبيعي',
+  NUTRITION_FITNESS: 'تغذية ولياقة',
+  // CREATIVE
+  GRAPHIC_DESIGN: 'تصميم جرافيك',
+  UI_UX: 'تصميم واجهات UI/UX',
+  CONTENT_CREATOR: 'صانع محتوى',
+  WRITER: 'كاتب',
+  VIDEO_EDITOR: 'مونتير',
+  PHOTOGRAPHY: 'تصوير',
+  // SELF_GROWTH
+  QURAN: 'قرآن',
+  ISLAMIC_STUDIES: 'علوم شرعية',
+  LANGUAGES: 'لغات',
+  READING: 'قراءة',
+  FITNESS: 'لياقة',
+  GENERAL_SKILLS: 'مهارات عامة',
+};
+
 export const AUDIO = {
   DEFAULT_LOCAL_SLOTS: 1,
   SLOT_UNLOCK_COST: 50,
@@ -315,6 +370,7 @@ export const isValidSpecialty = (domain, specialty) =>
   !specialty || (SPECIALTIES[domain]?.includes(specialty) ?? false);
 
 export default {
+  SPECIALTY_LABELS,
   SPARKS,
   PULSE,
   LIMITS,

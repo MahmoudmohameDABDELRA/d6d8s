@@ -12,6 +12,7 @@
  * ═══════════════════════════════════════════════════════════
  */
 import { generate, isConfigured } from './gemini.service.js';
+import { DOMAIN_LABELS, SPECIALTY_LABELS } from '../config/constants.js';
 
 /** استخراج JSON من نص الـ AI — يتحمل علامات ```json ... ``` */
 const extractJson = (text) => {
@@ -38,6 +39,36 @@ const PLAN_SYSTEM = `أنت «مخطط الأحلام» في تطبيق بال �
 أخرج JSON فقط بهذا الشكل بالضبط:
 {"steps":[{"title":"عنوان الخطوة","description":"شرح مختصر بماذا تُنجز"}]}`;
 
+/**
+ * ملف المستخدم كسطر عربي جاهز للحقن في البرومبت.
+ *
+ * ️ ليه ده مهم:
+ *    المستخدم بيملا شاشة الاهتمامات والتخصص في الأونبوردنج، وبعدين
+ *    كان مخطط الأحلام بيسأله من الأول «إيه خلفيتك؟» — أسوأ حاجة في
+ *    الـ UX إنك تسأل حد سؤال هو جاوبه قبل كده.
+ *
+ *    دلوقتي الـ AI بيعرف مين بيكلم قبل ما يسأل، فالأسئلة بتبقى أعمق
+ *    والخطة أدق.
+ *
+ * @returns {string|null} null لو مفيش أي بيانات (ما نحقنش سطر فاضي)
+ */
+const buildUserProfile = ({ interests, specialty, timezone } = {}) => {
+  const parts = [];
+
+  const domains = (interests ?? [])
+    .map((d) => DOMAIN_LABELS[d] ?? d)
+    .filter(Boolean);
+  if (domains.length) parts.push(`مجالات اهتمامه: ${domains.join(' · ')}`);
+
+  const spec = specialty ? (SPECIALTY_LABELS[specialty] ?? specialty) : null;
+  if (spec) parts.push(`وضعه الحالي: ${spec}`);
+
+  // المنطقة الزمنية = مؤشر تقريبي على السياق الجغرافي/الثقافي
+  if (timezone && timezone !== 'UTC') parts.push(`منطقته الزمنية: ${timezone}`);
+
+  return parts.length ? parts.join(' — ') : null;
+};
+
 /** هل الـ AI متاح أصلاً؟ */
 export const isDreamPlannerReady = () => isConfigured();
 
@@ -45,9 +76,30 @@ export const isDreamPlannerReady = () => isConfigured();
  * توليد أسئلة الكويز لهدف المستخدم
  * @returns {Promise<{questions: {question:string, options:string[]}[]}>}
  */
-export const generateQuizQuestions = async ({ username, dreamTitle, companionName }) => {
+export const generateQuizQuestions = async ({
+  username,
+  dreamTitle,
+  companionName,
+  profile,
+}) => {
   const name = companionName || 'رفيقك';
-  const system = `${QUIZ_SYSTEM}\nأنت تُدعى «${name}» وتخاطب «${username || 'صديقي'}».`;
+  const known = buildUserProfile(profile);
+
+  /**
+   * ️ لما نبقى عارفين بياناته، بنمنع النموذج صراحةً إنه يسأله عنها
+   *    تاني. من غير المنع ده النموذج بيسأل «إيه مجالك؟» حتى لو
+   *    المجال مكتوب قدامه في السياق.
+   */
+  const system = [
+    QUIZ_SYSTEM,
+    `أنت تُدعى «${name}» وتخاطب «${username || 'صديقي'}».`,
+    known
+      ? `\n── ما تعرفه عنه بالفعل (لا تسأله عنه تاني إطلاقاً) ──\n${known}\nاستثمر المعلومات دي: اسأله أسئلة أعمق تبني على اللي انت عارفه، مش أسئلة تعيد اكتشافه.`
+      : '',
+  ]
+    .filter(Boolean)
+    .join('\n');
+
   const prompt = `هدف المستخدم: «${dreamTitle}»\nاسألني الأسئلة الأربعة.`;
 
   const res = await generate(system, [], prompt, { maxTokens: 1024, temperature: 0.7 });
@@ -62,9 +114,24 @@ export const generateQuizQuestions = async ({ username, dreamTitle, companionNam
  * توليد خطة الجبل من إجابات المستخدم
  * @returns {Promise<{steps: {title:string, description:string}[]}>}
  */
-export const generatePlan = async ({ username, dreamTitle, answers, companionName }) => {
+export const generatePlan = async ({
+  username,
+  dreamTitle,
+  answers,
+  companionName,
+  profile,
+}) => {
   const name = companionName || 'رفيقك';
-  const system = `${PLAN_SYSTEM}\nأنت تُدعى «${name}» وتخاطب «${username || 'صديقي'}».`;
+  const known = buildUserProfile(profile);
+
+  const system = [
+    PLAN_SYSTEM,
+    `أنت تُدعى «${name}» وتخاطب «${username || 'صديقي'}».`,
+    known ? `\n── ما تعرفه عنه ──\n${known}\nابنِ الخطة على وضعه ده فعلياً، مش على شخص عام.` : '',
+  ]
+    .filter(Boolean)
+    .join('\n');
+
   const prompt = JSON.stringify({
     goal: dreamTitle,
     answers: answers.map((a) => ({ question: a.question, answer: a.answer })),

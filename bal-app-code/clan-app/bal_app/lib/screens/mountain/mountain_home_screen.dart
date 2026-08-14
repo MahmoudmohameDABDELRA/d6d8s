@@ -532,7 +532,8 @@ class _StepJourneyScreenState extends State<_StepJourneyScreen> {
       });
     } catch (e) {
       setState(() {
-        _error = 'مفيش رحلة بعد — اضغط زر التوليد (محتاج الـ AI)';
+        // ️ الرسالة القديمة كانت بلغة مبرمج («محتاج الـ AI»)
+        _error = 'المرحلة دي لسه مافيهاش رحلة — اضغط عشان رفيقك يجهّزها';
         _loading = false;
       });
     }

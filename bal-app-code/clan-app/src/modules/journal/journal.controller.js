@@ -3,8 +3,8 @@ import asyncHandler from '../../utils/asyncHandler.js';
 import { badRequest, conflict, forbidden, notFound } from '../../utils/AppError.js';
 import * as v from '../../utils/validate.js';
 import * as dreamPlanner from '../../services/dreamPlanner.service.js';
-import * as journeyPlanner from '../../services/journeyPlanner.service.js';
 import * as journeyScheduler from '../../services/journeyScheduler.service.js';
+import { bootstrapStepJourney } from '../../services/journeyBootstrap.service.js';
 import { localDate } from '../../services/streak.service.js';
 
 /**
@@ -164,6 +164,15 @@ export const createDream = asyncHandler(async (req, res) => {
       username: user.username,
       dreamTitle: trimmed,
       companionName: user.companionName,
+      /**
+       * ️ بياناته من الأونبوردنج — كانت متخزنة ومابتوصلش للـ AI،
+       *    فكان بيسأله عن مجاله وهو مختاره بإيده قبل كده.
+       */
+      profile: {
+        interests: user.interests,
+        specialty: user.specialty,
+        timezone: user.timezone,
+      },
     });
   } catch (e) {
     return res.status(503).json({
@@ -213,6 +222,11 @@ export const answerDreamQuiz = asyncHandler(async (req, res) => {
       dreamTitle: draft.title,
       answers,
       companionName: user.companionName,
+      profile: {
+        interests: user.interests,
+        specialty: user.specialty,
+        timezone: user.timezone,
+      },
     });
   } catch (e) {
     return res.status(503).json({
@@ -275,9 +289,53 @@ export const approveDreamPlan = asyncHandler(async (req, res) => {
     orderBy: { order: 'asc' },
   });
 
+  /**
+   * ═══ إقلاع تلقائي لأول مرحلة ═══
+   *
+   * ️ من غير ده كان المستخدم يوافق على جبله — أعلى لحظة حماس في
+   *    التطبيق — ويروح على المهام يلاقيها فاضية، والرسالة بتقوله
+   *    «مهام الجبل هتيجي لوحدها» وهي مش هتيجي إلا لما يرجع للجبل
+   *    ويضغط زر توليد لكل مرحلة يدوياً.
+   *
+   * ️ أول مرحلة بس (order = 0) مش السبعة:
+   *    · 7 نداءات AI في طلب واحد = انتظار طويل وخطر timeout
+   *    · المستخدم مش محتاج يشوف تفاصيل المرحلة السابعة دلوقتي
+   *    الباقي بيتولّد لما يفتح كل مرحلة (نفس الخدمة، autoApprove=false)
+   *
+   * ️ فشله لا يُفشل الموافقة: الجبل اتثبّت خلاص، والمستخدم يقدر
+   *    يولّد الرحلة يدوياً. عشان كده الاستجابة بترجع
+   *    `firstJourney: null` بدل ما ترمي خطأ.
+   */
+  let firstJourney = null;
+  const firstStep = steps[0];
+  if (firstStep) {
+    try {
+      const boot = await bootstrapStepJourney({
+        stepId: firstStep.id,
+        userId: req.user.userId,
+        autoApprove: true,
+      });
+      firstJourney = {
+        stepId: firstStep.id,
+        journeyId: boot.journey.id,
+        title: boot.journey.title,
+        durationDays: boot.journey.durationDays,
+        days: boot.days,
+        generatedTasks: boot.generatedTasks,
+      };
+    } catch (e) {
+      // JOURNEY_EXISTS يعني اتولدت قبل كده — مش خطأ حقيقي
+      if (e.code !== 'JOURNEY_EXISTS') {
+        console.warn('فشل الإقلاع التلقائي لأول مرحلة:', e.code || e.message);
+      }
+    }
+  }
+
   return res.json({
     success: true,
-    message: 'خطتك اتثبّت — الجبل قدامك، ابدأ التسلق',
+    message: firstJourney
+      ? 'خطتك اتثبّت — ومهمة النهاردة مستنياك في المهام 🏔️'
+      : 'خطتك اتثبّت — الجبل قدامك، ابدأ التسلق',
     goal: {
       id: goal.id,
       title: goal.title,
@@ -285,6 +343,8 @@ export const approveDreamPlan = asyncHandler(async (req, res) => {
       currentWeek: goal.currentWeek,
     },
     steps,
+    /** null لو الـ AI كان واقع — الواجهة تعرض زر «ابدأ أول مرحلة» */
+    firstJourney,
   });
 });
 
@@ -382,77 +442,48 @@ export const completeGoalStep = asyncHandler(async (req, res) => {
 /** 1) توليد رحلة الهدف — نداء AI حقيقي واحد → DRAFT + أيام (معاينة قبل الموافقة) */
 export const generateStepJourney = asyncHandler(async (req, res) => {
   const { stepId } = req.params;
-  const userId = req.user.userId;
 
-  // الخطوة ملك المستخدم + غير مكتملة
-  const step = await prisma.goalStep.findFirst({
-    where: { id: stepId, goal: { userId }, isCompleted: false },
-    include: { goal: { select: { title: true } }, journey: true },
-  });
-  if (!step) throw notFound('المرحلة غير موجودة أو مكتملة');
-
-  // رحلة واحدة لكل مرحلة
-  if (step.journey) {
-    throw conflict('هذه المرحلة ليها رحلة بالفعل', 'JOURNEY_EXISTS');
-  }
-
-  if (!journeyPlanner.isJourneyPlannerReady()) {
-    return res.status(503).json({
-      success: false,
-      code: 'GEMINI_NOT_CONFIGURED',
-      message: 'الرفيق غير متاح حالياً — تأكد من ضبط مفتاح الذكاء الاصطناعي في السيرفر',
-    });
-  }
-
-  const user = await prisma.user.findUnique({ where: { id: userId } });
-
-  let plan;
+  /**
+   * ️ نفس الخدمة اللي بيستخدمها الإقلاع التلقائي بعد الموافقة على
+   *    الجبل — الفرق `autoApprove` بس. الكود كان مكرر في المكانين
+   *    قبل كده، وأي تعديل في منطق التوليد كان لازم يتعمل مرتين.
+   */
   try {
-    plan = await journeyPlanner.generateJourney({
-      username: user.username,
-      dreamTitle: step.goal.title,
-      goalTitle: step.title,
-      companionName: user.companionName,
+    const { journey, days } = await bootstrapStepJourney({
+      stepId,
+      userId: req.user.userId,
+      autoApprove: false,
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: 'خطة الرحلة جاهزة — راجعها ووافق',
+      journey: {
+        id: journey.id,
+        title: journey.title,
+        durationDays: journey.durationDays,
+        status: journey.status,
+      },
+      days,
     });
   } catch (e) {
+    if (e.code === 'STEP_NOT_FOUND') throw notFound('المرحلة غير موجودة أو مكتملة');
+    if (e.code === 'JOURNEY_EXISTS') {
+      throw conflict('هذه المرحلة ليها رحلة بالفعل', 'JOURNEY_EXISTS');
+    }
+    if (e.code === 'GEMINI_NOT_CONFIGURED') {
+      return res.status(503).json({
+        success: false,
+        code: 'GEMINI_NOT_CONFIGURED',
+        message: 'الرفيق غير متاح حالياً — تأكد من ضبط مفتاح الذكاء الاصطناعي في السيرفر',
+      });
+    }
     return res.status(503).json({
       success: false,
       code: e.code === 'GEMINI_QUOTA' ? 'GEMINI_QUOTA' : 'AI_UNAVAILABLE',
       message: 'الرفيق مشغول حالياً — حاول بعد قليل',
     });
   }
-
-  // تخزين: Journey DRAFT + أيامها — في transaction واحدة
-  const journey = await prisma.$transaction(async (tx) => {
-    const j = await tx.journey.create({
-      data: {
-        goalStepId: step.id,
-        title: `رحلة «${step.title}»`,
-        durationDays: plan.days.length,
-      },
-    });
-    await tx.journeyDay.createMany({
-      data: plan.days.map((d) => ({
-        journeyId: j.id,
-        dayNumber: d.day,
-        title: d.title,
-        description: d.description,
-      })),
-    });
-    return j;
-  });
-
-  const days = await prisma.journeyDay.findMany({
-    where: { journeyId: journey.id },
-    orderBy: { dayNumber: 'asc' },
-  });
-
-  return res.status(201).json({
-    success: true,
-    message: 'خطة الرحلة جاهزة — راجعها ووافق',
-    journey: { id: journey.id, title: journey.title, durationDays: journey.durationDays, status: journey.status },
-    days,
-  });
 });
 
 /** 2) موافقة المستخدم → ACTIVE + توزيع التواريخ + توليد مهمة اليوم الأول */
