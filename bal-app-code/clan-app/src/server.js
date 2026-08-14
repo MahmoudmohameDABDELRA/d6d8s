@@ -8,6 +8,7 @@ import { Server } from 'socket.io';
 
 import app from './app.js';
 import registerChatSocket from './sockets/chat.socket.js';
+import registerNotificationSocket from './sockets/notification.socket.js';
 import registerSnakeGame from './sockets/snake.game.js';
 import registerDominoGame from './sockets/domino.game.js';
 import { connectPostgres, disconnectPostgres } from './config/db.js';
@@ -112,6 +113,12 @@ const startServer = async () => {
     app.set('io', io);
 
     registerChatSocket(io);
+    /**
+     * ⭐ قناة الإشعارات اللحظية — بيها البوب-أب بتاع «عملت إيه في
+     *    المهمة؟» بيطلع فوراً والتطبيق مفتوح، وبيها رد الرفيق بيوصل
+     *    لباقي أجهزة المستخدم في نفس اللحظة.
+     */
+    registerNotificationSocket(io);
     registerSnakeGame(io);
     registerDominoGame(io);
 

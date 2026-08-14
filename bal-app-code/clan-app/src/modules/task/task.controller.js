@@ -6,6 +6,7 @@ import * as streakService from '../../services/streak.service.js';
 import * as analyticsService from '../../services/analytics.service.js';
 import * as taskBlockService from '../../services/taskBlock.service.js';
 import * as taskNudge from '../../services/taskNudge.service.js';
+import * as taskCheckIn from '../../services/taskCheckIn.service.js';
 import asyncHandler from '../../utils/asyncHandler.js';
 import { badRequest, conflict, notFound } from '../../utils/AppError.js';
 import * as v from '../../utils/validate.js';
@@ -227,8 +228,14 @@ export const createTask = asyncHandler(async (req, res) => {
     });
   });
 
-  // جدولة النكشة قبل الموعد (لو فيه dueDate مستقبلي)
+  /**
+   * ⭐ التوقيتان معاً (قرار المالك):
+   *   1) نكشة قبل المهمة بـ 5 دقايق
+   *   2) سؤال الاطمئنان لما وقتها يخلص
+   * الاتنين بيفشلوا مفتوحين — الجدولة ما تفشّلش إنشاء المهمة.
+   */
   if (due) await taskNudge.scheduleNudge(task).catch(() => {});
+  await taskCheckIn.scheduleEndOfTaskCheckIn(task).catch(() => {});
 
   res.status(201).json({ success: true, message: 'تمت إضافة المهمة', task });
 });
@@ -283,6 +290,8 @@ export const updateTask = asyncHandler(async (req, res) => {
   // ═══ P2: لو اتغير الوقت/التاريخ → إعادة جدولة النكشة (jobId ثابت يستبدل القديمة) ═══
   if (data.dueDate !== undefined || data.startTime !== undefined || data.endTime !== undefined) {
     await taskNudge.scheduleNudge(task).catch(() => {});
+    // jobId ثابت → الجدولة الجديدة بتستبدل القديمة، مش بتتكرر معاها
+    await taskCheckIn.scheduleEndOfTaskCheckIn(task).catch(() => {});
   }
 
   res.json({ success: true, task });
@@ -410,8 +419,7 @@ export const completeTask = asyncHandler(async (req, res) => {
 
   // ═══ اطمئنان الـ AI بعد 10 دقائق (Follow-up Coach) — لكل المهام ═══
   try {
-    const { scheduleTaskCheckIn } = await import('../../services/taskCheckIn.service.js');
-    await scheduleTaskCheckIn(task.id);
+    await taskCheckIn.scheduleTaskCheckIn(task.id);
   } catch (e) {
     // عدم نجاح الجدولة لا يُفشل الإتمام — يُسجَّل فقط
     console.warn('فشل جدولة الاطمئنان:', e.message);
@@ -488,6 +496,7 @@ const createNextRoutineOccurrence = async (task) => {
 
   // جدولة نكشة الغد
   await taskNudge.scheduleNudge(created).catch(() => {});
+  await taskCheckIn.scheduleEndOfTaskCheckIn(created).catch(() => {});
 
   return created;
 };
@@ -544,6 +553,7 @@ export const deleteTask = asyncHandler(async (req, res) => {
 
   // ═══ P2: إلغاء النكشة المجدولة للمهمة المحذوفة ═══
   await taskNudge.cancelNudge(id).catch(() => {});
+  await taskCheckIn.cancelTaskCheckIns(id).catch(() => {});
 
   res.json({ success: true, message: 'تم حذف المهمة' });
 });

@@ -18,9 +18,17 @@
  */
 import prisma from '../config/prisma.js';
 import { localDate } from './streak.service.js';
+import { emitToUser } from './realtime.service.js';
+import { localHourToUtc } from '../utils/taskTiming.js';
 import { scoped } from '../config/logger.js';
 
 const log = scoped('journey-scheduler');
+
+/**
+ * ساعة سؤال الاطمئنان لمهام الجبل — 21:00 بتوقيت المستخدم.
+ * مهام الجبل مالهاش ساعة محددة، و21 بدل 23:59 عشان يلاقيه صاحي.
+ */
+const CHECKIN_LOCAL_HOUR = 21;
 
 /**
  * توليد مهام اليوم النشط لكل رحلات ACTIVE لمستخدم (أو لرحلة محددة)
@@ -87,7 +95,7 @@ export const generateTodayTasks = async ({ userId, journeyId } = {}) => {
     }
 
     try {
-      await prisma.task.create({
+      const createdTask = await prisma.task.create({
         data: {
           userId: journey.step.goal.userId,
           title: day.title,
@@ -100,6 +108,32 @@ export const generateTodayTasks = async ({ userId, journeyId } = {}) => {
           slotDate: day.scheduledDate ?? new Date(),
         },
       });
+
+      /**
+       * ⭐ جدولة سؤال الاطمئنان لمهمة الجبل.
+       *
+       * ️ من غير السطر ده كانت مهام الجبل — وهي **أغلب مهام
+       *    المستخدم** — بتتولد بلا أي اطمئنان، لأن الجدولة كانت
+       *    متعلقة بمسار إنشاء المهمة اليدوي بس. يعني أهم فيتشر
+       *    في التطبيق كان شغال على أقل مصدر مهام.
+       *
+       *    مهمة الجبل مالهاش وقت محدد في اليوم، فبناخد نهاية اليوم
+       *    المحلي للمستخدم كمعاد للسؤال.
+       */
+      try {
+        const { scheduleEndOfTaskCheckIn } = await import('./taskCheckIn.service.js');
+        await scheduleEndOfTaskCheckIn({
+          ...createdTask,
+          scheduledEnd: localHourToUtc(
+            day.scheduledDate ?? localToday,
+            tz,
+            CHECKIN_LOCAL_HOUR,
+          ),
+        });
+      } catch (e) {
+        log.warn({ taskId: createdTask.id, err: e.message }, 'فشل جدولة اطمئنان مهمة الجبل');
+      }
+
       created++;
       const uid = journey.step.goal.userId;
       if (!createdByUser.has(uid)) createdByUser.set(uid, []);
@@ -123,8 +157,14 @@ export const generateTodayTasks = async ({ userId, journeyId } = {}) => {
           type: 'TASK_REMINDER',
           title: 'مهامك لليوم جاهزة 🏔️',
           body: `النهارده عندك: ${titles.slice(0, 3).join(' · ')}${titles.length > 3 ? '…' : ''}`,
-          data: { kind: 'journey-daily', count: titles.length },
+            data: { kind: 'journey-daily', count: titles.length },
         },
+      });
+
+      // بث لحظي: التطبيق مفتوح → قايمة النهاردة تتحدّث فوراً
+      await emitToUser(uid, 'tasks:generated', {
+        count: titles.length,
+        titles: titles.slice(0, 5),
       });
     } catch {
       /* الإشعار لا يُفشل التوليد */

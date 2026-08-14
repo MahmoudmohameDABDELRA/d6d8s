@@ -159,9 +159,25 @@ const MOMENTS = {
  * @param {string}  [reminder]  تحذير أمني يُحقن عند اشتباه خفيف
  */
 export const build = (mode, contextText, moment, canAct = false, reminder = null) => {
-  const parts = [CORE, MODES[mode] ?? MODES.COMPANION];
+  /**
+   * ️ إصلاح: بعض الأوضاع (TASK_FOLLOWUP / TASK_PRE_REMINDER) معرَّفة
+   *    في MOMENTS لا في MODES. النسخة القديمة كانت تقرأ MODES[mode]
+   *    فقط، فتسقط قواعد متابعة المهام صامتةً وترجع لوضع COMPANION
+   *    العام — يعني قواعد «ممنوع اللوم» لم تكن تُطبَّق إطلاقاً.
+   *
+   *    الحل: لو الاسم موجود في MOMENTS نستعمله كـ moment ونُبقي
+   *    الوضع الأساسي COMPANION.
+   */
+  let effectiveMode = mode;
+  let effectiveMoment = moment;
+  if (mode && !MODES[mode] && MOMENTS[mode]) {
+    effectiveMode = 'COMPANION';
+    effectiveMoment = effectiveMoment ?? mode;
+  }
 
-  if (moment && MOMENTS[moment]) parts.push(MOMENTS[moment]);
+  const parts = [CORE, MODES[effectiveMode] ?? MODES.COMPANION];
+
+  if (effectiveMoment && MOMENTS[effectiveMoment]) parts.push(MOMENTS[effectiveMoment]);
 
   if (contextText) {
     parts.push(`\n── بياناته الآن ──\n${contextText}`);

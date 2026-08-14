@@ -90,7 +90,12 @@ const handleTaskNudge = async (job) => {
 /** اطمئنان ما بعد المهمة (بعد 10 دقائق) — نداء AI حقيقي → إشعار */
 const handleTaskCheckIn = async (job) => {
   const checkin = await import('../services/taskCheckIn.service.js');
-  return checkin.executeCheckIn(job.data.taskId);
+  /**
+   * ⚠️ `reason` بيحدد نبرة السؤال: انتهى وقت المهمة المجدول
+   *    (SCHEDULE_END) ولا عدّت 10 دقايق على إنجازها (COMPLETED).
+   *    الجوبس القديمة في الطابور مالهاش reason — بنرجّع الافتراضي.
+   */
+  return checkin.executeCheckIn(job.data.taskId, job.data.reason);
 };
 
 /** توليد مهام اليوم لكل الرحات النشطة — شبكة أمان (صفر AI) */

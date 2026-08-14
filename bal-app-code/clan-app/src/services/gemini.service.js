@@ -126,7 +126,13 @@ export const generate = async (
   const config = {
     systemInstruction,
     maxOutputTokens: opts.maxTokens ?? MAX_TOKENS,
-    temperature: 0.85,
+    /**
+     * ⚠️ كانت مثبَّتة على 0.85 و opts.temperature يُتجاهَل بصمت —
+     *    يعني dreamPlanner (0.7) وسؤال الاطمئنان (1.0) كانوا بيشتغلوا
+     *    بنفس الحرارة. ده كان بيخلي صياغة الاطمئنان متشابهة كل مرة،
+     *    وهي بالظبط الحاجة اللي بتقتل الفيتشر.
+     */
+    temperature: typeof opts.temperature === 'number' ? opts.temperature : 0.85,
     topP: 0.95,
 
     /**
