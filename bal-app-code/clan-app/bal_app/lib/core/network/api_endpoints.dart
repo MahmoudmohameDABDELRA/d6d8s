@@ -2,36 +2,50 @@ import 'package:flutter/foundation.dart';
 
 /// 🔗 عناوين الباك إند (نقاط الربط الحقيقية)
 abstract final class ApiEndpoints {
-  /// في الويب: نفس أصل الصفحة (الـ dev server بيروج للـ API)
-  /// في الموبايل: عنوان السيرفر — يُعدّل حسب بيئة النشر
-  static String get baseUrl {
-    if (kIsWeb) {
-      // في الـ preview: نستخدم نفس الأصل (الـ proxy بيحول للباك)
-      // نتحقق من نافذة المتصفح وقت التشغيل
-      return '';
-    }
-    // الموبايل/الديسكتوب
-    return 'http://10.0.2.2:3000/api'; // Android Emulator → host
-  }
+  /// عنوان السيرفر — يتظبط وقت البناء:
+  ///   flutter run --dart-define=API_BASE_URL=http://192.168.1.5:3000
+  static const _override = String.fromEnvironment('API_BASE_URL');
 
-  static String resolve(String path) {
-    if (kIsWeb) {
-      final origin = _webOrigin();
-      return '$origin/api$path';
-    }
-    return '$baseUrl$path';
-  }
+  /// أصل السيرفر (بلا /api)
+  static String get origin {
+    if (_override.isNotEmpty) return _stripSlash(_override);
 
-  static String _webOrigin() {
-    // الوصول لـ window.location عبر dart:js_interop (بسيط)
-    try {
-      final loc = Uri.base;
-      if (loc.host.isNotEmpty && loc.scheme.startsWith('http')) {
-        return '${loc.scheme}://${loc.host}${loc.hasPort ? ':${loc.port}' : ''}';
+    if (kIsWeb) {
+      /// ️ الويب: لازم نفرّق بين حالتين مختلفتين تماماً.
+      ///
+      ///    · `flutter run -d chrome` بيشغّل التطبيق على بورت عشوائي
+      ///      (زي 57960) **بلا أي proxy**. النسخة القديمة كانت
+      ///      بتستخدم نفس الأصل، فالتطبيق كان بيبعت الطلبات لنفسه
+      ///      ويقع بـ 404 — الحساب مكانش بيتعمل والدخول مكانش بيشتغل.
+      ///
+      ///    · النشر الحقيقي: التطبيق متسيرڤ من الباك إند نفسه، فنفس
+      ///      الأصل هو الصح.
+      ///
+      ///    الفرق بينهم: بورت الـ dev server مش 3000.
+      final base = Uri.base;
+      final isFlutterDevServer =
+          (base.host == 'localhost' || base.host == '127.0.0.1') &&
+              base.port != 3000;
+
+      if (isFlutterDevServer) return 'http://localhost:3000';
+
+      if (base.host.isNotEmpty && base.scheme.startsWith('http')) {
+        return '${base.scheme}://${base.host}${base.hasPort ? ':${base.port}' : ''}';
       }
-    } catch (_) {}
-    return 'http://localhost:3000';
+      return 'http://localhost:3000';
+    }
+
+    /// أندرويد: 10.0.2.2 هو جهازك من جوّه المحاكي.
+    /// على موبايل حقيقي مرّر IP جهازك بـ --dart-define.
+    return 'http://10.0.2.2:3000';
   }
+
+  static String get baseUrl => '$origin/api';
+
+  static String resolve(String path) => '$origin/api$path';
+
+  static String _stripSlash(String url) =>
+      url.endsWith('/') ? url.substring(0, url.length - 1) : url;
 
   // ── Auth ──
   static const register = '/auth/register';
