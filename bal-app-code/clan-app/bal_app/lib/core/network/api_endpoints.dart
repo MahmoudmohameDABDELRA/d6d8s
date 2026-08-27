@@ -90,6 +90,9 @@ abstract final class ApiEndpoints {
   static const alarmSnooze = '/alarms/snooze';
   static const wakeTask = '/alarms/wake-task';
   static const wakeTaskSolve = '/alarms/wake-task/solve';
+  static const alarmHistory = '/alarms/history';
+  static const alarmMissed = '/alarms/missed';
+  static String alarm(String id) => '/alarms/$id';
 
   // ── الرسائل والعشائر ──
   static const chatStart = '/chat/start';

@@ -4,6 +4,7 @@ import '../core/theme/app_theme.dart';
 import '../screens/mountain/dream_setup_screen.dart';
 import '../screens/focus/focus_setup_screen.dart';
 import '../screens/chat/chat_screen.dart';
+import '../screens/alarm/alarms_screen.dart';
 
 /// ➕ قائمة الإنشاء السريع (Hero FAB)
 Future<void> showCreateMenu(BuildContext context) {
@@ -46,6 +47,16 @@ class _CreateMenuSheet extends StatelessWidget {
         color: c.friendship,
         onTap: () => Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => const ChatScreen()),
+        ),
+      ),
+      /// ️ الزرار ده كان موجود بـ TODO — بيقفل القائمة ومش بيعمل
+      ///    حاجة. شيلته وقتها ودلوقتي رجع وشاشته اتبنت.
+      _MenuItem(
+        icon: Icons.alarm_rounded,
+        label: 'منبه',
+        color: c.summitGlow,
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const AlarmsScreen()),
         ),
       ),
     ];

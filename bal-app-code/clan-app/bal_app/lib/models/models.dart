@@ -370,3 +370,61 @@ class ChatMessage {
     );
   }
 }
+
+/// ⏰ منبه — بيصحّيك بمهمة لازم تحلها عشان يقفل
+class BalAlarm {
+  final String id;
+
+  /// "06:00" بتوقيتك
+  final String time;
+
+  /// أيام الأسبوع — الأحد = 0 والسبت = 6
+  final List<int> days;
+
+  final bool isActive;
+
+  /// لازم تحل مسألة عشان المنبه يقفل — مش مجرد ضغطة
+  final bool requireProof;
+
+  final int wakeStreak;
+  final int longestWakeStreak;
+
+  const BalAlarm({
+    required this.id,
+    required this.time,
+    this.days = const [],
+    this.isActive = true,
+    this.requireProof = true,
+    this.wakeStreak = 0,
+    this.longestWakeStreak = 0,
+  });
+
+  factory BalAlarm.fromJson(Map<String, dynamic> j) => BalAlarm(
+        id: (j['id'] ?? '').toString(),
+        time: (j['time'] ?? '00:00').toString(),
+        days: (j['days'] as List? ?? const [])
+            .map((d) => (d as num).toInt())
+            .toList(),
+        isActive: j['isActive'] != false,
+        requireProof: j['requireProof'] != false,
+        wakeStreak: (j['wakeStreak'] as num?)?.toInt() ?? 0,
+        longestWakeStreak: (j['longestWakeStreak'] as num?)?.toInt() ?? 0,
+      );
+
+  static const dayNames = ['أحد', 'اتنين', 'تلات', 'أربع', 'خميس', 'جمعة', 'سبت'];
+
+  /// وصف الأيام بالعربي — «كل يوم» / «أيام الشغل» / «أحد · تلات»
+  String get daysLabel {
+    if (days.isEmpty) return 'مرة واحدة';
+    if (days.length == 7) return 'كل يوم';
+
+    final sorted = [...days]..sort();
+    if (sorted.length == 5 && !sorted.contains(5) && !sorted.contains(6)) {
+      return 'أيام الشغل';
+    }
+    if (sorted.length == 2 && sorted.contains(5) && sorted.contains(6)) {
+      return 'الويكند';
+    }
+    return sorted.map((d) => dayNames[d % 7]).join(' · ');
+  }
+}
