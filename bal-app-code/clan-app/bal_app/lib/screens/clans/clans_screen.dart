@@ -9,6 +9,7 @@ import '../../models/models.dart';
 import '../../widgets/buttons.dart';
 import '../../widgets/glass_card.dart';
 import 'clan_members_screen.dart';
+import '../../widgets/skeleton.dart';
 
 /// 🛡️ شاشة العشائر — الناس اللي زيك
 ///
@@ -149,7 +150,7 @@ class _ClansScreenState extends State<ClansScreen> {
               if (_loading)
                 const SliverFillRemaining(
                   hasScrollBody: false,
-                  child: Center(child: CircularProgressIndicator()),
+                  child: CardListSkeleton(count: 3, height: 104),
                 )
               else if (_error != null)
                 SliverFillRemaining(
@@ -183,7 +184,7 @@ class _ClansScreenState extends State<ClansScreen> {
           Text(
             'العشائر',
             style: TextStyle(
-              fontSize: 32,
+              fontSize: BalType.display,
               fontWeight: FontWeight.w700,
               color: c.text,
             ),
@@ -191,7 +192,7 @@ class _ClansScreenState extends State<ClansScreen> {
           const SizedBox(height: 4.5),
           Text(
             'ناس زيك — بتتسلق نفس الجبل',
-            style: TextStyle(fontSize: 16, color: c.textSecondary),
+            style: TextStyle(fontSize: BalType.body, color: c.textSecondary),
           ),
           const SizedBox(height: AppTheme.spaceXl),
           Row(
@@ -258,7 +259,7 @@ class _ClansScreenState extends State<ClansScreen> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            fontSize: 17.5,
+                            fontSize: BalType.bodyLg,
                             fontWeight: FontWeight.w600,
                             color: c.text,
                           ),
@@ -281,12 +282,12 @@ class _ClansScreenState extends State<ClansScreen> {
                             ? '${clan.membersCount} / ${clan.maxMembers}'
                             : '${clan.membersCount} عضو',
                         style:
-                            TextStyle(fontSize: 14, color: c.textSecondary),
+                            TextStyle(fontSize: BalType.small, color: c.textSecondary),
                       ),
                       const SizedBox(width: AppTheme.spaceMd),
                       Text(
                         clan.isPrivate ? 'خاصة' : 'عامة',
-                        style: TextStyle(fontSize: 14, color: c.textDisabled),
+                        style: TextStyle(fontSize: BalType.small, color: c.textDisabled),
                       ),
                     ],
                   ),
@@ -366,7 +367,7 @@ class _ClansScreenState extends State<ClansScreen> {
           Text(
             'لسه مانضمتش لعشيرة',
             style: TextStyle(
-              fontSize: 20.5,
+              fontSize: BalType.titleLg,
               fontWeight: FontWeight.w600,
               color: c.text,
             ),
@@ -375,7 +376,7 @@ class _ClansScreenState extends State<ClansScreen> {
           Text(
             'عشيرة اهتمامك مستنياك — ناس بتتسلق نفس الجبل',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 16, color: c.textSecondary),
+            style: TextStyle(fontSize: BalType.body, color: c.textSecondary),
           ),
           const SizedBox(height: AppTheme.spaceXxl),
           PillButton(
@@ -399,7 +400,7 @@ class _ClansScreenState extends State<ClansScreen> {
           const SizedBox(height: AppTheme.spaceLg),
           Text(_error!,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16, color: c.textSecondary)),
+              style: TextStyle(fontSize: BalType.body, color: c.textSecondary)),
           const SizedBox(height: AppTheme.spaceXl),
           OutlinePillButton(
             label: 'جرّب تاني',
@@ -506,7 +507,7 @@ class _CreateClanDialogState extends State<_CreateClanDialog> {
           if (_error != null) ...[
             const SizedBox(height: AppTheme.spaceMd),
             Text(_error!,
-                style: TextStyle(color: c.danger, fontSize: 14)),
+                style: TextStyle(color: c.danger, fontSize: BalType.small)),
           ],
         ],
       ),
@@ -605,7 +606,7 @@ class _JoinClanDialogState extends State<_JoinClanDialog> {
           ),
           if (_error != null) ...[
             const SizedBox(height: AppTheme.spaceMd),
-            Text(_error!, style: TextStyle(color: c.danger, fontSize: 14)),
+            Text(_error!, style: TextStyle(color: c.danger, fontSize: BalType.small)),
           ],
         ],
       ),

@@ -134,7 +134,7 @@ class _ChallengeInviteDialogState extends State<_ChallengeInviteDialog> {
                     widget.invite.title,
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: 18.5,
+                      fontSize: BalType.title,
                       fontWeight: FontWeight.w700,
                       color: c.text,
                     ),
@@ -150,7 +150,7 @@ class _ChallengeInviteDialogState extends State<_ChallengeInviteDialog> {
                 widget.invite.body,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 15.5,
+                  fontSize: BalType.body,
                   height: 1.5,
                   color: c.textSecondary,
                 ),
@@ -164,7 +164,7 @@ class _ChallengeInviteDialogState extends State<_ChallengeInviteDialog> {
                 child: Text(
                   _error!,
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 14, color: c.danger),
+                  style: TextStyle(fontSize: BalType.small, color: c.danger),
                 ),
               ),
 
@@ -179,7 +179,7 @@ class _ChallengeInviteDialogState extends State<_ChallengeInviteDialog> {
                       onPressed: _busy ? null : _decline,
                       child: Text(
                         'مش دلوقتي',
-                        style: TextStyle(color: c.textSecondary, fontSize: 15),
+                        style: TextStyle(color: c.textSecondary, fontSize: BalType.body),
                       ),
                     ),
                   ),
@@ -207,7 +207,7 @@ class _ChallengeInviteDialogState extends State<_ChallengeInviteDialog> {
                             )
                           : const Text('أنا معاكم',
                               style: TextStyle(
-                                  fontSize: 15.5, fontWeight: FontWeight.w600)),
+                                  fontSize: BalType.body, fontWeight: FontWeight.w600)),
                     ),
                   ),
                 ],

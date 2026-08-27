@@ -184,7 +184,7 @@ class _WakeTaskScreenState extends State<WakeTaskScreen> {
         Text(
           widget.isPreview ? 'كده بيبقى شكلها' : 'صباح الخير 🌅',
           style: TextStyle(
-            fontSize: 25.5,
+            fontSize: BalType.heading,
             fontWeight: FontWeight.w700,
             color: c.text,
           ),
@@ -192,7 +192,7 @@ class _WakeTaskScreenState extends State<WakeTaskScreen> {
         const SizedBox(height: AppTheme.spaceSm),
         Text(
           'حل المسألة عشان المنبه يقفل',
-          style: TextStyle(fontSize: 15.5, color: c.textSecondary),
+          style: TextStyle(fontSize: BalType.body, color: c.textSecondary),
         ),
         const SizedBox(height: AppTheme.spaceXxxl),
 
@@ -209,7 +209,7 @@ class _WakeTaskScreenState extends State<WakeTaskScreen> {
             _question ?? '',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 32,
+              fontSize: BalType.display,
               fontWeight: FontWeight.w700,
               color: c.text,
             ),
@@ -227,13 +227,13 @@ class _WakeTaskScreenState extends State<WakeTaskScreen> {
           textAlign: TextAlign.center,
           onSubmitted: (_) => _submit(),
           style: TextStyle(
-            fontSize: 27.5,
+            fontSize: BalType.heading,
             fontWeight: FontWeight.w700,
             color: c.text,
           ),
           decoration: InputDecoration(
             hintText: '؟',
-            hintStyle: TextStyle(fontSize: 27.5, color: c.textDisabled),
+            hintStyle: TextStyle(fontSize: BalType.heading, color: c.textDisabled),
             filled: true,
             fillColor: c.surface,
             border: OutlineInputBorder(
@@ -259,7 +259,7 @@ class _WakeTaskScreenState extends State<WakeTaskScreen> {
           Text(
             /// ️ بلا لوم — نفس قاعدة الرفيق. الغلط وانت نايم طبيعي.
             _attempts >= 3 ? 'خد وقتك، مفيش استعجال' : 'مش دي — جرّب تاني',
-            style: TextStyle(fontSize: 14.5, color: c.textSecondary),
+            style: TextStyle(fontSize: BalType.small, color: c.textSecondary),
           ),
         ],
 
@@ -284,7 +284,7 @@ class _WakeTaskScreenState extends State<WakeTaskScreen> {
         Text(
           _error!,
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 15.5, color: c.textSecondary),
+          style: TextStyle(fontSize: BalType.body, color: c.textSecondary),
         ),
         const SizedBox(height: AppTheme.spaceXl),
         OutlinePillButton(

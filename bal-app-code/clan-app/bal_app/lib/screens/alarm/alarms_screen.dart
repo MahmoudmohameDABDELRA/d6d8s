@@ -9,6 +9,7 @@ import '../../models/models.dart';
 import '../../widgets/buttons.dart';
 import '../../widgets/glass_card.dart';
 import 'wake_task_screen.dart';
+import '../../widgets/skeleton.dart';
 
 /// ⏰ المنبهات
 ///
@@ -131,7 +132,7 @@ class _AlarmsScreenState extends State<AlarmsScreen> {
       ),
       body: SafeArea(
         child: _loading
-            ? const Center(child: CircularProgressIndicator())
+            ? const CardListSkeleton(count: 3, height: 96)
             : _error != null
                 ? _errorView(c)
                 : RefreshIndicator(
@@ -171,14 +172,14 @@ class _AlarmsScreenState extends State<AlarmsScreen> {
                 Text(
                   '$_bestStreak يوم ورا بعض',
                   style: TextStyle(
-                    fontSize: 18.5,
+                    fontSize: BalType.title,
                     fontWeight: FontWeight.w700,
                     color: c.text,
                   ),
                 ),
                 Text(
                   'صحيت في معادك',
-                  style: TextStyle(fontSize: 14, color: c.textSecondary),
+                  style: TextStyle(fontSize: BalType.small, color: c.textSecondary),
                 ),
               ],
             ),
@@ -201,7 +202,7 @@ class _AlarmsScreenState extends State<AlarmsScreen> {
                   Text(
                     a.time,
                     style: TextStyle(
-                      fontSize: 32,
+                      fontSize: BalType.display,
                       fontWeight: FontWeight.w700,
                       /// المنبه المقفول باهت — الحالة تبان من غير قراءة
                       color: a.isActive ? c.text : c.textDisabled,
@@ -211,7 +212,7 @@ class _AlarmsScreenState extends State<AlarmsScreen> {
                   Text(
                     a.daysLabel,
                     style: TextStyle(
-                      fontSize: 14.5,
+                      fontSize: BalType.small,
                       color: a.isActive ? c.textSecondary : c.textDisabled,
                     ),
                   ),
@@ -225,7 +226,7 @@ class _AlarmsScreenState extends State<AlarmsScreen> {
                         const SizedBox(width: 4.5),
                         Text(
                           'بمسألة',
-                          style: TextStyle(fontSize: 13, color: c.accent),
+                          style: TextStyle(fontSize: BalType.caption, color: c.accent),
                         ),
                       ],
                     ),
@@ -278,7 +279,7 @@ class _AlarmsScreenState extends State<AlarmsScreen> {
               Text(
                 'مفيش منبهات',
                 style: TextStyle(
-                  fontSize: 20.5,
+                  fontSize: BalType.titleLg,
                   fontWeight: FontWeight.w600,
                   color: c.text,
                 ),
@@ -287,7 +288,7 @@ class _AlarmsScreenState extends State<AlarmsScreen> {
               Text(
                 'المنبه هنا مش بيقفل بضغطة — لازم تحل مسألة الأول',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 15.5, color: c.textSecondary),
+                style: TextStyle(fontSize: BalType.body, color: c.textSecondary),
               ),
               const SizedBox(height: AppTheme.spaceXxl),
               PillButton(
@@ -314,7 +315,7 @@ class _AlarmsScreenState extends State<AlarmsScreen> {
             const SizedBox(height: AppTheme.spaceLg),
             Text(_error!,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 15, color: c.textSecondary)),
+                style: TextStyle(fontSize: BalType.body, color: c.textSecondary)),
             const SizedBox(height: AppTheme.spaceXl),
             OutlinePillButton(
               label: 'جرّب تاني',
@@ -420,7 +421,7 @@ class _AlarmDialogState extends State<_AlarmDialog> {
                   child: Text(
                     _timeString,
                     style: TextStyle(
-                      fontSize: 39,
+                      fontSize: BalType.displayLg,
                       fontWeight: FontWeight.w700,
                       color: c.primary,
                     ),
@@ -430,7 +431,7 @@ class _AlarmDialogState extends State<_AlarmDialog> {
             ),
             const SizedBox(height: AppTheme.spaceLg),
             Text('الأيام',
-                style: TextStyle(fontSize: 14.5, color: c.textSecondary)),
+                style: TextStyle(fontSize: BalType.small, color: c.textSecondary)),
             const SizedBox(height: AppTheme.spaceSm),
             Wrap(
               spacing: 6,
@@ -454,7 +455,7 @@ class _AlarmDialogState extends State<_AlarmDialog> {
                     child: Text(
                       BalAlarm.dayNames[i],
                       style: TextStyle(
-                        fontSize: 13.5,
+                        fontSize: BalType.small,
                         fontWeight: on ? FontWeight.w600 : FontWeight.w400,
                         color: on ? c.onPrimary : c.textSecondary,
                       ),
@@ -470,15 +471,15 @@ class _AlarmDialogState extends State<_AlarmDialog> {
               activeThumbColor: c.primary,
               onChanged: _busy ? null : (v) => setState(() => _requireProof = v),
               title: Text('يقفل بمسألة',
-                  style: TextStyle(fontSize: 15, color: c.text)),
+                  style: TextStyle(fontSize: BalType.body, color: c.text)),
               subtitle: Text(
                 'من غيرها هتقفله وانت نايم',
-                style: TextStyle(fontSize: 13, color: c.textSecondary),
+                style: TextStyle(fontSize: BalType.caption, color: c.textSecondary),
               ),
             ),
             if (_error != null) ...[
               const SizedBox(height: AppTheme.spaceSm),
-              Text(_error!, style: TextStyle(color: c.danger, fontSize: 14)),
+              Text(_error!, style: TextStyle(color: c.danger, fontSize: BalType.small)),
             ],
           ],
         ),

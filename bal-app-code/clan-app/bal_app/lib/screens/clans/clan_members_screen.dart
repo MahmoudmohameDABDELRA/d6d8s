@@ -10,6 +10,7 @@ import '../../widgets/glass_card.dart';
 import '../../widgets/user_avatar.dart';
 import '../../widgets/buttons.dart';
 import '../focus/challenge_room_screen.dart';
+import '../../widgets/skeleton.dart';
 
 /// 👥 أعضاء العشيرة
 ///
@@ -74,7 +75,7 @@ class _ClanMembersScreenState extends State<ClanMembersScreen> {
         child: RefreshIndicator(
           onRefresh: _load,
           child: _loading
-              ? const Center(child: CircularProgressIndicator())
+              ? const MemberListSkeleton()
               : _error != null
                   ? _errorView(c)
                   : ListView(
@@ -130,7 +131,7 @@ class _ClanMembersScreenState extends State<ClanMembersScreen> {
           Expanded(
             child: Text(
               reason,
-              style: TextStyle(fontSize: 13.5, color: c.textSecondary),
+              style: TextStyle(fontSize: BalType.small, color: c.textSecondary),
             ),
           ),
         ],
@@ -194,13 +195,13 @@ class _ClanMembersScreenState extends State<ClanMembersScreen> {
           Text(
             value,
             style: TextStyle(
-              fontSize: 25.5,
+              fontSize: BalType.heading,
               fontWeight: FontWeight.w700,
               color: color ?? c.text,
             ),
           ),
           const SizedBox(height: 2.5),
-          Text(label, style: TextStyle(fontSize: 14, color: c.textSecondary)),
+          Text(label, style: TextStyle(fontSize: BalType.small, color: c.textSecondary)),
         ],
       ),
     );
@@ -232,7 +233,7 @@ class _ClanMembersScreenState extends State<ClanMembersScreen> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            fontSize: 16.5,
+                            fontSize: BalType.bodyLg,
                             fontWeight: FontWeight.w600,
                             color: c.text,
                           ),
@@ -247,7 +248,7 @@ class _ClanMembersScreenState extends State<ClanMembersScreen> {
                   if (m.specialty != null)
                     Text(
                       m.specialty!,
-                      style: TextStyle(fontSize: 13.5, color: c.textSecondary),
+                      style: TextStyle(fontSize: BalType.small, color: c.textSecondary),
                     ),
                 ],
               ),
@@ -255,7 +256,7 @@ class _ClanMembersScreenState extends State<ClanMembersScreen> {
             if (m.isOnline)
               Text(
                 'متاح',
-                style: TextStyle(fontSize: 13.5, color: c.primary),
+                style: TextStyle(fontSize: BalType.small, color: c.primary),
               ),
           ],
         ),
@@ -274,7 +275,7 @@ class _ClanMembersScreenState extends State<ClanMembersScreen> {
             const SizedBox(height: AppTheme.spaceLg),
             Text(_error!,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 16, color: c.textSecondary)),
+                style: TextStyle(fontSize: BalType.body, color: c.textSecondary)),
           ],
         ),
       ),
@@ -350,7 +351,7 @@ class _ChallengeSetupDialogState extends State<_ChallengeSetupDialog> {
               child: Text(
                 'إجمالي $_total دقيقة',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: BalType.body,
                   fontWeight: FontWeight.w600,
                   color: c.primary,
                 ),
@@ -394,7 +395,7 @@ class _ChallengeSetupDialogState extends State<_ChallengeSetupDialog> {
         children: [
           Expanded(
             child: Text(label,
-                style: TextStyle(fontSize: 15, color: c.textSecondary)),
+                style: TextStyle(fontSize: BalType.body, color: c.textSecondary)),
           ),
           IconButton(
             icon: const Icon(Icons.remove_circle_outline_rounded),
@@ -407,7 +408,7 @@ class _ChallengeSetupDialogState extends State<_ChallengeSetupDialog> {
               value,
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 16.5,
+                fontSize: BalType.bodyLg,
                 fontWeight: FontWeight.w600,
                 color: c.text,
               ),

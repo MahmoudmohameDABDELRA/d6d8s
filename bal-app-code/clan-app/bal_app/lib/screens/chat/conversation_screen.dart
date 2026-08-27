@@ -693,7 +693,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
                           Text(
                             'معدَّلة · ',
                             style: text.bodySmall?.copyWith(
-                              fontSize: 11,
+                              fontSize: BalType.micro,
                               color: mine
                                   ? c.onPrimary.withValues(alpha: 0.7)
                                   : c.textDisabled,
@@ -703,7 +703,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
                           Text(
                             _time(m.createdAt!),
                             style: text.bodySmall?.copyWith(
-                              fontSize: 11,
+                              fontSize: BalType.micro,
                               color: mine
                                   ? c.onPrimary.withValues(alpha: 0.7)
                                   : c.textDisabled,
@@ -741,7 +741,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
                         ),
                         child: Text(
                           '${e.key} ${e.value}',
-                          style: text.bodySmall?.copyWith(fontSize: 12),
+                          style: text.bodySmall?.copyWith(fontSize: BalType.caption),
                         ),
                       ),
                     );
@@ -791,7 +791,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
                       width: 48,
                       height: 48,
                       alignment: Alignment.center,
-                      child: Text(e, style: const TextStyle(fontSize: 26)),
+                      child: Text(e, style: const TextStyle(fontSize: BalType.heading)),
                     ),
                   );
                 }).toList(),

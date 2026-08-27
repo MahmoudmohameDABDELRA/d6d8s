@@ -124,22 +124,41 @@ test('التكبير حصل فعلاً في ثوابت الثيم', () => {
 });
 
 test('سلّم أحجام الخط في الثيم اتكبّر', () => {
+  /**
+   * ️ الاختبار ده اتحدّث لما السلّم اتوحّد.
+   *
+   *  قبل كده كان بيقرا `fontSize: 39` مباشرةً من الثيم. دلوقتي
+   *  الأحجام كلها بقت ثوابت مسمّاة في `BalType` (عشان كان في
+   *  ٢٥ حجم مبعثرين في ١٦٨ مكان)، فالثيم بيقول
+   *  `fontSize: BalType.displayLg` مش رقم.
+   *
+   *  فبنقرا القيم من مصدرها: كتلة `BalType`. نفس الفحص —
+   *  المصدر اتغيّر بس.
+   */
   const src = readFileSync(THEME, 'utf8');
-  const sizes = [...src.matchAll(/fontSize:\s*([\d.]+)/g)].map((m) => Number(m[1]));
+
+  const start = src.indexOf('abstract final class BalType');
+  assert.ok(start > 0, 'BalType مش موجود — السلّم اتشال');
+
+  const block = src.slice(start);
+  const sizes = [...block.matchAll(/static const double \w+ = ([\d.]+);/g)].map(
+    (m) => Number(m[1]),
+  );
 
   assert.ok(sizes.length >= 8, 'سلّم الخطوط ناقص');
 
   // أكبر عنوان: 34 → 39
-  assert.ok(sizes.includes(39), 'headlineLarge لازم يبقى 39');
-  // أصغر نص: 12 → 14
-  assert.ok(sizes.includes(14), 'bodySmall لازم يبقى 14');
+  assert.ok(sizes.includes(39), 'الشعار لازم يبقى 39');
+  // أصغر نص عادي: 12 → 14
+  assert.ok(sizes.includes(14), 'النص الثانوي لازم يبقى 14');
 
   /**
-   * ️ ما فيش نص أصغر من 13 بعد التكبير — لو موجود يبقى فات
-   *    على التكبير، والنص هيبان صغير وسط باقي الواجهة.
+   * ️ ما فيش نص أصغر من 11 — تحت كده مش مقروء على الموبايل.
+   *    (الحد كان 13 قبل التوحيد؛ درجة `micro` = 11 مقصودة
+   *    لأختام الوقت جوه فقاعة الرسالة بس.)
    */
   for (const s of sizes) {
-    assert.ok(s >= 13, `حجم خط صغير في الثيم (${s}) — شكله فات على التكبير`);
+    assert.ok(s >= 11, `حجم خط صغير في السلّم (${s})`);
   }
 });
 

@@ -27,7 +27,7 @@ class ProfileScreen extends StatelessWidget {
               children: [
                 Text('أنا',
                     style: TextStyle(
-                        fontSize: 32, fontWeight: FontWeight.w700, color: c.text)),
+                        fontSize: BalType.display, fontWeight: FontWeight.w700, color: c.text)),
                 const Spacer(),
                 IconButton(
                   icon: Icon(
@@ -53,13 +53,13 @@ class ProfileScreen extends StatelessWidget {
                   const SizedBox(height: 14),
                   Text(user?.username ?? 'مستخدم',
                       style: TextStyle(
-                          fontSize: 23,
+                          fontSize: BalType.titleLg,
                           fontWeight: FontWeight.w700,
                           color: c.text)),
                   if (user?.companionName != null) ...[
                     const SizedBox(height: 4.5),
                     Text('رفيقي: ${user!.companionName}',
-                        style: TextStyle(color: c.accent, fontSize: 15)),
+                        style: TextStyle(color: c.accent, fontSize: BalType.body)),
                   ],
                   const SizedBox(height: 18.5),
                   Row(
@@ -107,9 +107,9 @@ class ProfileScreen extends StatelessWidget {
     return Column(
       children: [
         Text('$emoji $value',
-            style: TextStyle(fontSize: 20.5, fontWeight: FontWeight.w700, color: c.text)),
+            style: TextStyle(fontSize: BalType.titleLg, fontWeight: FontWeight.w700, color: c.text)),
         const SizedBox(height: 2.5),
-        Text(label, style: TextStyle(color: c.textSecondary, fontSize: 14)),
+        Text(label, style: TextStyle(color: c.textSecondary, fontSize: BalType.small)),
       ],
     );
   }
@@ -134,10 +134,10 @@ class ProfileScreen extends StatelessWidget {
             Expanded(
               child: Text(title,
                   style: TextStyle(
-                      fontSize: 17.5, fontWeight: FontWeight.w600, color: c.text)),
+                      fontSize: BalType.bodyLg, fontWeight: FontWeight.w600, color: c.text)),
             ),
             if (subtitle.isNotEmpty)
-              Text(subtitle, style: TextStyle(color: c.textSecondary, fontSize: 14)),
+              Text(subtitle, style: TextStyle(color: c.textSecondary, fontSize: BalType.small)),
             Icon(Icons.chevron_left_rounded, color: c.textSecondary),
           ],
         ),

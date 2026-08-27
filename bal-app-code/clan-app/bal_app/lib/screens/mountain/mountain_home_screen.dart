@@ -11,6 +11,7 @@ import '../../widgets/glass_card.dart';
 import '../../widgets/progress_ring.dart';
 import '../../widgets/ai_orb.dart';
 import 'dream_setup_screen.dart';
+import '../../widgets/skeleton.dart';
 
 /// 🏔️ شاشة الجبل — القلب: المسار + العقد + التقدم + الربط بالمهام
 class MountainHomeScreen extends StatefulWidget {
@@ -77,7 +78,7 @@ class _MountainHomeScreenState extends State<MountainHomeScreen> {
               if (_loading)
                 const SliverFillRemaining(
                   hasScrollBody: false,
-                  child: Center(child: CircularProgressIndicator()),
+                  child: CardListSkeleton(count: 3, height: 120),
                 )
               else if (_error != null)
                 SliverFillRemaining(
@@ -107,7 +108,7 @@ class _MountainHomeScreenState extends State<MountainHomeScreen> {
         children: [
           Text('جبل الأهداف',
               style: TextStyle(
-                  fontSize: 32,
+                  fontSize: BalType.display,
                   fontWeight: FontWeight.w700,
                   color: c.text)),
           const Spacer(),
@@ -130,7 +131,7 @@ class _MountainHomeScreenState extends State<MountainHomeScreen> {
             Text('الجبل مستني أول خطوة',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                    fontSize: 25.5,
+                    fontSize: BalType.heading,
                     fontWeight: FontWeight.w600,
                     color: c.text)),
             const SizedBox(height: 9),
@@ -161,7 +162,7 @@ class _MountainHomeScreenState extends State<MountainHomeScreen> {
             Icon(Icons.cloud_off_rounded, size: 69, color: c.textDisabled),
             const SizedBox(height: 18.5),
             Text('مفيش اتصال بالباك',
-                style: TextStyle(fontSize: 20.5, fontWeight: FontWeight.w600, color: c.text)),
+                style: TextStyle(fontSize: BalType.titleLg, fontWeight: FontWeight.w600, color: c.text)),
             const SizedBox(height: 9),
             Text('تأكد إن السيرفر شغال على المنفذ 3000',
                 textAlign: TextAlign.center,
@@ -196,7 +197,7 @@ class _MountainHomeScreenState extends State<MountainHomeScreen> {
                   strokeWidth: 7,
                   center: Text('$percent%',
                       style: TextStyle(
-                          fontSize: 16,
+                          fontSize: BalType.body,
                           fontWeight: FontWeight.w700,
                           color: c.primary)),
                 ),
@@ -207,7 +208,7 @@ class _MountainHomeScreenState extends State<MountainHomeScreen> {
                     children: [
                       Text(goal.title,
                           style: TextStyle(
-                              fontSize: 19.5,
+                              fontSize: BalType.title,
                               fontWeight: FontWeight.w600,
                               color: c.text),
                           maxLines: 1,
@@ -217,7 +218,7 @@ class _MountainHomeScreenState extends State<MountainHomeScreen> {
                         steps.isEmpty
                             ? 'الجبل لسه بينبني...'
                             : 'المرحلة الحالية: ${steps.firstWhere((s) => !s.isCompleted, orElse: () => steps.last).title}',
-                        style: TextStyle(color: c.textSecondary, fontSize: 15),
+                        style: TextStyle(color: c.textSecondary, fontSize: BalType.body),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -424,7 +425,7 @@ class _StageNode extends StatelessWidget {
                   ? '${step.title.substring(0, 14)}…'
                   : step.title,
               style: TextStyle(
-                  fontSize: 10,
+                  fontSize: BalType.micro,
                   fontWeight: isCurrent ? FontWeight.w600 : FontWeight.w400,
                   color: isCurrent ? c.accent : c.textSecondary),
               maxLines: 1,
@@ -465,7 +466,7 @@ class _StageSheet extends StatelessWidget {
             const SizedBox(height: 23),
             Text('مرحلة: ${step.title}',
                 style: TextStyle(
-                    fontSize: 23,
+                    fontSize: BalType.titleLg,
                     fontWeight: FontWeight.w700,
                     color: c.text)),
             const SizedBox(height: 4.5),
@@ -473,7 +474,7 @@ class _StageSheet extends StatelessWidget {
               step.isCompleted
                   ? '✓ مكتملة — ربنا يبارك فيك'
                   : 'المرحلة الحالية — من رحلة حلمك',
-              style: TextStyle(color: step.isCompleted ? c.primary : c.accent, fontSize: 15),
+              style: TextStyle(color: step.isCompleted ? c.primary : c.accent, fontSize: BalType.body),
             ),
             const SizedBox(height: 23),
             // زر فتح رحلة المرحلة (مربوطة بـ GET journey)
@@ -493,7 +494,7 @@ class _StageSheet extends StatelessWidget {
               Text(
                 'لما تكمل مهامك في قسم المهام → الجبل هيتقدم لوحده',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: c.textSecondary, fontSize: 14),
+                style: TextStyle(color: c.textSecondary, fontSize: BalType.small),
               ),
             ],
           ],
@@ -592,7 +593,7 @@ class _StepJourneyScreenState extends State<_StepJourneyScreen> {
             Icon(Icons.route_rounded, size: 73.5, color: c.textDisabled),
             const SizedBox(height: 18.5),
             Text('مفيش رحلة لسه',
-                style: TextStyle(fontSize: 20.5, fontWeight: FontWeight.w600, color: c.text)),
+                style: TextStyle(fontSize: BalType.titleLg, fontWeight: FontWeight.w600, color: c.text)),
             const SizedBox(height: 9),
             Text('الرفيق هيبني خطة الأيام بالـ AI — وبعد موافقتك هتتولد مهامك في قسم المهام',
                 textAlign: TextAlign.center,
@@ -622,7 +623,7 @@ class _StepJourneyScreenState extends State<_StepJourneyScreen> {
                 children: [
                   Text(j.title,
                       style: TextStyle(
-                          fontSize: 19.5, fontWeight: FontWeight.w600, color: c.text)),
+                          fontSize: BalType.title, fontWeight: FontWeight.w600, color: c.text)),
                   const Spacer(),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 11.5, vertical: 4.5),
@@ -639,11 +640,11 @@ class _StepJourneyScreenState extends State<_StepJourneyScreen> {
               LinearProgressBar(progress: j.percent / 100),
               const SizedBox(height: 9),
               Text('${j.completedDays} من ${j.durationDays} يوم',
-                  style: TextStyle(color: c.textSecondary, fontSize: 15)),
+                  style: TextStyle(color: c.textSecondary, fontSize: BalType.body)),
               if (j.lateDays > 0) ...[
                 const SizedBox(height: 7),
                 Text('متأخر $j.lateDays يوم — لسه تقدر تلحق 💪',
-                    style: TextStyle(color: c.danger, fontSize: 15)),
+                    style: TextStyle(color: c.danger, fontSize: BalType.body)),
               ],
             ],
           ),
@@ -691,12 +692,12 @@ class _StepJourneyScreenState extends State<_StepJourneyScreen> {
                     children: [
                       Text('اليوم ${day.dayNumber}: ${day.title}',
                           style: TextStyle(
-                              fontSize: 16,
+                              fontSize: BalType.body,
                               fontWeight: FontWeight.w500,
                               color: c.text)),
                       if (day.description != null)
                         Text(day.description!,
-                            style: TextStyle(color: c.textSecondary, fontSize: 14),
+                            style: TextStyle(color: c.textSecondary, fontSize: BalType.small),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis),
                     ],
@@ -709,7 +710,7 @@ class _StepJourneyScreenState extends State<_StepJourneyScreen> {
         Text(
           'مهمة كل يوم بتتولد تلقائياً في قسم المهام عند منتصف ليلك المحلي ⏰',
           textAlign: TextAlign.center,
-          style: TextStyle(color: c.textSecondary, fontSize: 14),
+          style: TextStyle(color: c.textSecondary, fontSize: BalType.small),
         ),
       ],
     );

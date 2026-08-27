@@ -75,7 +75,7 @@ class _FocusSetupScreenState extends State<FocusSetupScreen> {
           padding: const EdgeInsets.all(AppTheme.spaceXxl),
           children: [
             Text('ظبط وقتك وابدأ',
-                style: TextStyle(fontSize: 18.5, color: c.textSecondary)),
+                style: TextStyle(fontSize: BalType.title, color: c.textSecondary)),
             const SizedBox(height: 23),
             _stepper(c, 'وقت التركيز', _focusMin, 'دقيقة', 5, 120,
                 (v) => setState(() => _focusMin = v)),
@@ -94,12 +94,12 @@ class _FocusSetupScreenState extends State<FocusSetupScreen> {
                 children: [
                   Text('$_focusMin دقيقة تركيز × $_cycles + راحة $_restMin بينهم',
                       style: TextStyle(
-                          fontSize: 17.5,
+                          fontSize: BalType.bodyLg,
                           fontWeight: FontWeight.w600,
                           color: c.text)),
                   const SizedBox(height: 7),
                   Text('الإجمالي: $_total دقيقة — آخر دورة = لوبي 🏁',
-                      style: TextStyle(color: c.accent, fontSize: 15)),
+                      style: TextStyle(color: c.accent, fontSize: BalType.body)),
                 ],
               ),
             ),
@@ -141,11 +141,11 @@ class _FocusSetupScreenState extends State<FocusSetupScreen> {
               children: [
                 Text(label,
                     style: TextStyle(
-                        fontSize: 15, fontWeight: FontWeight.w500, color: c.textSecondary)),
+                        fontSize: BalType.body, fontWeight: FontWeight.w500, color: c.textSecondary)),
                 const SizedBox(height: 2.5),
                 Text('$value $unit',
                     style: TextStyle(
-                        fontSize: 23, fontWeight: FontWeight.w700, color: c.text)),
+                        fontSize: BalType.titleLg, fontWeight: FontWeight.w700, color: c.text)),
               ],
             ),
           ),
@@ -332,7 +332,7 @@ class _FocusSessionScreenState extends State<FocusSessionScreen>
                 const SizedBox(height: 23),
                 Text('أحسنت! الجلسة خلصت 🎉',
                     style: TextStyle(
-                        fontSize: 27.5,
+                        fontSize: BalType.heading,
                         fontWeight: FontWeight.w700,
                         color: c.text)),
                 const SizedBox(height: 9),
@@ -366,7 +366,7 @@ class _FocusSessionScreenState extends State<FocusSessionScreen>
                     ? 'راحة 🧘'
                     : 'جلسة تركيز · دورة ${st.cycleNumber} من ${widget.cycles}',
                 style: TextStyle(
-                    fontSize: 18.5,
+                    fontSize: BalType.title,
                     fontWeight: FontWeight.w600,
                     color: c.textSecondary)),
             const SizedBox(height: 27.5),
@@ -380,13 +380,13 @@ class _FocusSessionScreenState extends State<FocusSessionScreen>
                 children: [
                   Text('$mm:$ss',
                       style: TextStyle(
-                          fontSize: 60,
+                          fontSize: BalType.hero,
                           fontWeight: FontWeight.w700,
                           color: c.text,
                           fontFeatures: const [FontFeature.tabularFigures()])),
                   const SizedBox(height: 4.5),
                   Text(st.isRest ? 'راحة' : 'دقيقة تركيز',
-                      style: TextStyle(color: c.textSecondary, fontSize: 15)),
+                      style: TextStyle(color: c.textSecondary, fontSize: BalType.body)),
                 ],
               ),
             ),
@@ -394,7 +394,7 @@ class _FocusSessionScreenState extends State<FocusSessionScreen>
             //  الوقت الكلي الفاضل — عشان المستخدم يعرف هو فين من الرحلة
             Text(
               'باقي ${st.totalRemaining.inMinutes} دقيقة على خلاص الجلسة',
-              style: TextStyle(color: c.textDisabled, fontSize: 13),
+              style: TextStyle(color: c.textDisabled, fontSize: BalType.caption),
             ),
             const SizedBox(height: 27.5),
             if (!st.isRest)

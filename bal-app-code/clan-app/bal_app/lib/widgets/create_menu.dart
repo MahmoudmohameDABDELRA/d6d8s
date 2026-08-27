@@ -83,7 +83,7 @@ class _CreateMenuSheet extends StatelessWidget {
           ),
           const SizedBox(height: 23),
           Text('إضافة سريعة',
-              style: TextStyle(fontSize: 20.5, fontWeight: FontWeight.w600, color: c.text)),
+              style: TextStyle(fontSize: BalType.titleLg, fontWeight: FontWeight.w600, color: c.text)),
           const SizedBox(height: 18.5),
           for (final item in items) ...[
             _CreateItemTile(item: item),
@@ -125,7 +125,7 @@ class _CreateItemTile extends StatelessWidget {
             const SizedBox(width: 16),
             Text(item.label,
                 style: TextStyle(
-                    fontSize: 17.5,
+                    fontSize: BalType.bodyLg,
                     fontWeight: FontWeight.w600,
                     color: c.text)),
             const Spacer(),

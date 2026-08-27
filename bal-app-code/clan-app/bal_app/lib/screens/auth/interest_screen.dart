@@ -60,13 +60,13 @@ class _InterestScreenState extends State<InterestScreen> {
               Text('اختار اهتمامك',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                      fontSize: 27.5,
+                      fontSize: BalType.heading,
                       fontWeight: FontWeight.w700,
                       color: c.text)),
               const SizedBox(height: 9),
               Text('ده اللي هيجمعك بناس زيك في العشائر العامة',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: c.textSecondary, fontSize: 16)),
+                  style: TextStyle(color: c.textSecondary, fontSize: BalType.body)),
               const SizedBox(height: 32),
               for (final (icon, value, label, desc) in _interests) ...[
                 GestureDetector(
@@ -97,12 +97,12 @@ class _InterestScreenState extends State<InterestScreen> {
                             children: [
                               Text(label,
                                   style: TextStyle(
-                                      fontSize: 18.5,
+                                      fontSize: BalType.title,
                                       fontWeight: FontWeight.w600,
                                       color: c.text)),
                               Text(desc,
                                   style: TextStyle(
-                                      color: c.textSecondary, fontSize: 14)),
+                                      color: c.textSecondary, fontSize: BalType.small)),
                             ],
                           ),
                         ),

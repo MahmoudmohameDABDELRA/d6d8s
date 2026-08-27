@@ -91,22 +91,25 @@ abstract final class AppTheme {
             fontFamily: fontFamily,
           )
           .copyWith(
+            /// ️ الأحجام من `BalType` مش أرقام مكتوبة — الثيم
+            ///    والاستخدام المباشر لازم ياخدوا من نفس السلّم،
+            ///    وإلا نرجع لنفس المشكلة من الباب التاني.
             headlineLarge: base.textTheme.headlineLarge?.copyWith(
-              fontSize: 39, fontWeight: FontWeight.w700, height: 1.2),
+              fontSize: BalType.displayLg, fontWeight: FontWeight.w700, height: 1.2),
             headlineMedium: base.textTheme.headlineMedium?.copyWith(
-              fontSize: 32, fontWeight: FontWeight.w700, height: 1.2),
+              fontSize: BalType.display, fontWeight: FontWeight.w700, height: 1.2),
             headlineSmall: base.textTheme.headlineSmall?.copyWith(
-              fontSize: 25.5, fontWeight: FontWeight.w600, height: 1.2),
+              fontSize: BalType.heading, fontWeight: FontWeight.w600, height: 1.2),
             titleLarge: base.textTheme.titleLarge?.copyWith(
-              fontSize: 20.5, fontWeight: FontWeight.w600, height: 1.3),
+              fontSize: BalType.titleLg, fontWeight: FontWeight.w600, height: 1.3),
             titleMedium: base.textTheme.titleMedium?.copyWith(
-              fontSize: 18.5, fontWeight: FontWeight.w600, height: 1.4),
+              fontSize: BalType.title, fontWeight: FontWeight.w600, height: 1.4),
             bodyLarge: base.textTheme.bodyLarge?.copyWith(
-              fontSize: 18.5, fontWeight: FontWeight.w400, height: 1.5),
+              fontSize: BalType.bodyLg, fontWeight: FontWeight.w400, height: 1.5),
             bodyMedium: base.textTheme.bodyMedium?.copyWith(
-              fontSize: 16, fontWeight: FontWeight.w400, height: 1.5),
+              fontSize: BalType.body, fontWeight: FontWeight.w400, height: 1.5),
             bodySmall: base.textTheme.bodySmall?.copyWith(
-              fontSize: 14, fontWeight: FontWeight.w400, height: 1.5),
+              fontSize: BalType.small, fontWeight: FontWeight.w400, height: 1.5),
           ),
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,
@@ -149,4 +152,52 @@ class _C {
     required this.border,
     required this.danger,
   });
+}
+
+/// 🔠 سلّم الخطوط — المصدر الوحيد لأحجام النص
+///
+/// ️ قبل كده كان في **٢٥ حجم** مكتوبين بالإيد في ١٦٨ مكان،
+///    فيهم كسور زي 13.5 و17.5 مالهاش أي معنى تصميمي — دي بقايا
+///    سكربت تكبير ١٥٪ اشتغل على أرقام ثابتة عشوائية.
+///
+///    النتيجة كانت نصوص بنفس الأهمية بأحجام مختلفة بفرق نص نقطة:
+///    فرق مش كفاية يفرّق في المعنى، بس كفاية يخلي الشاشة تبان
+///    مش مظبوطة من غير ما المستخدم يعرف السبب.
+///
+/// ️ استخدم `Theme.of(context).textTheme` لما ينفع — ده بيدّي
+///    اللون والوزن وارتفاع السطر مع الحجم. الثوابت دي للحالات
+///    اللي محتاجة رقم صريح (أيقونات، عدّادات، إيموجي).
+abstract final class BalType {
+  /// أختام ووقت الرسالة
+  static const double micro = 11;
+
+  /// تسميات صغيرة
+  static const double caption = 12.5;
+
+  /// نص ثانوي
+  static const double small = 14;
+
+  /// النص الأساسي
+  static const double body = 15.5;
+
+  /// نص بارز
+  static const double bodyLg = 17;
+
+  /// عنوان قسم
+  static const double title = 18.5;
+
+  /// عنوان شاشة صغير
+  static const double titleLg = 21;
+
+  /// عنوان شاشة
+  static const double heading = 25.5;
+
+  /// رقم كبير
+  static const double display = 32;
+
+  /// شعار
+  static const double displayLg = 39;
+
+  /// عدّاد الجلسة
+  static const double hero = 60;
 }

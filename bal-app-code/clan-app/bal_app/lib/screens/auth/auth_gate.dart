@@ -100,13 +100,13 @@ class _AuthGateState extends State<AuthGate> {
                 Text('بال',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                        fontSize: 39,
+                        fontSize: BalType.displayLg,
                         fontWeight: FontWeight.w700,
                         color: c.text)),
                 const SizedBox(height: 4.5),
                 Text('رفيقك للقمة 🏔️',
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: c.textSecondary, fontSize: 16)),
+                    style: TextStyle(color: c.textSecondary, fontSize: BalType.body)),
                 const SizedBox(height: 37),
                 GlassCard(
                   padding: const EdgeInsets.all(AppTheme.spaceXl),
@@ -236,13 +236,13 @@ class _CompanionNamingScreenState extends State<CompanionNamingScreen> {
               Text('بماذا تريد أن تناديني؟',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                      fontSize: 25.5,
+                      fontSize: BalType.heading,
                       fontWeight: FontWeight.w600,
                       color: c.text)),
               const SizedBox(height: 9),
               Text('أنا رفيقك — سمّيني باي اسم تحبه، وهيبقى اسمي معاك في كل حتة',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: c.textSecondary, fontSize: 16)),
+                  style: TextStyle(color: c.textSecondary, fontSize: BalType.body)),
               const SizedBox(height: 32),
               TextField(
                 controller: _name,

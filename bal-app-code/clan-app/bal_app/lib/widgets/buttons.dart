@@ -85,7 +85,7 @@ class _PillButtonState extends State<PillButton> {
                       Text(
                         widget.label,
                         style: TextStyle(
-                          fontSize: 18.5,
+                          fontSize: BalType.title,
                           fontWeight: FontWeight.w600,
                           color: fg,
                         ),
@@ -156,7 +156,7 @@ class _OutlinePillButtonState extends State<OutlinePillButton> {
               ],
               Text(widget.label,
                   style: TextStyle(
-                      fontSize: 17.5, fontWeight: FontWeight.w500, color: fg)),
+                      fontSize: BalType.bodyLg, fontWeight: FontWeight.w500, color: fg)),
             ],
           ),
         ),
@@ -182,10 +182,19 @@ class IconCircleButton extends StatelessWidget {
     this.tooltip,
   });
 
+  /// ️ الحد الأدنى للمساحة القابلة للمس — ٤٨ نقطة.
+  ///
+  ///    ده مش رقم مخترع: ده الحد اللي Material و Apple HIG
+  ///    متفقين عليه، ومبني على متوسط مساحة تلامس الصبع.
+  ///    أقل من كده الضغطة بتفشل، والمستخدم بيلوم نفسه مش
+  ///    التطبيق — فبيعيد ويعيد.
+  static const double minTouch = 48;
+
   @override
   Widget build(BuildContext context) {
     final c = BalColors(context);
     final fg = color ?? c.text;
+
     final btn = Material(
       color: c.surfaceElevated.withValues(alpha: 0.7),
       shape: CircleBorder(
@@ -201,7 +210,19 @@ class IconCircleButton extends StatelessWidget {
         ),
       ),
     );
-    if (tooltip == null) return btn;
-    return Tooltip(message: tooltip!, child: btn);
+
+    /// ️ لو الشكل أصغر من الحد، بنلفّه في مساحة شفافة بالحد.
+    ///    الشكل بيفضل بحجمه (التصميم ما بيتغيّرش) لكن الضغطة
+    ///    بتنجح من مساحة أوسع.
+    final sized = size >= minTouch
+        ? btn
+        : SizedBox(
+            width: minTouch,
+            height: minTouch,
+            child: Center(child: btn),
+          );
+
+    if (tooltip == null) return sized;
+    return Tooltip(message: tooltip!, child: sized);
   }
 }

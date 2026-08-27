@@ -9,6 +9,7 @@ import '../../widgets/glass_card.dart';
 import '../../widgets/user_avatar.dart';
 import '../../models/models.dart';
 import 'conversation_screen.dart';
+import '../../widgets/skeleton.dart';
 
 /// 💬 شاشة الرسائل — تبويبان (محادثات/عشيرة) + بحث (الرؤية 4.1-4.4)
 class ChatScreen extends StatefulWidget {
@@ -145,7 +146,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   AppTheme.spaceXxl, AppTheme.spaceLg, AppTheme.spaceXxl, 0),
               child: Text('الرسائل',
                   style: TextStyle(
-                      fontSize: 32, fontWeight: FontWeight.w700, color: c.text)),
+                      fontSize: BalType.display, fontWeight: FontWeight.w700, color: c.text)),
             ),
             // البحث
             Padding(
@@ -206,7 +207,7 @@ class _ChatScreenState extends State<ChatScreen> {
         ),
         child: Text(label,
             style: TextStyle(
-                fontSize: 16,
+                fontSize: BalType.body,
                 fontWeight: FontWeight.w600,
                 color: active ? c.onPrimary : c.textSecondary)),
       ),
@@ -248,11 +249,11 @@ class _ChatScreenState extends State<ChatScreen> {
                   children: [
                     Text('${u['username'] ?? ''}',
                         style: TextStyle(
-                            fontSize: 17.5,
+                            fontSize: BalType.bodyLg,
                             fontWeight: FontWeight.w600,
                             color: c.text)),
                     Text('${u['domain'] ?? 'اهتمام'}',
-                        style: TextStyle(color: c.textSecondary, fontSize: 14)),
+                        style: TextStyle(color: c.textSecondary, fontSize: BalType.small)),
                   ],
                 ),
               ),
@@ -321,7 +322,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   // قائمة المحادثات
   Widget _conversationsList(BalColors c) {
-    if (_loading) return const Center(child: CircularProgressIndicator());
+    if (_loading) return const CardListSkeleton(count: 5, height: 76);
     if (_error != null) return _errorView(c);
 
     if (_conversations.isEmpty) {
@@ -367,7 +368,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontSize: 16.5,
+                      fontSize: BalType.bodyLg,
                       fontWeight: FontWeight.w600,
                       color: c.text,
                     ),
@@ -379,7 +380,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: BalType.small,
                         color: conv.unread > 0 ? c.text : c.textSecondary,
                         fontWeight: conv.unread > 0
                             ? FontWeight.w500
@@ -402,7 +403,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 child: Text(
                   '${conv.unread}',
                   style: TextStyle(
-                    fontSize: 12.5,
+                    fontSize: BalType.caption,
                     fontWeight: FontWeight.w700,
                     color: c.onPrimary,
                   ),
@@ -416,7 +417,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   /// قائمة شاتات العشائر — كانت نص ثابت مش بيانات
   Widget _clansList(BalColors c) {
-    if (_loading) return const Center(child: CircularProgressIndicator());
+    if (_loading) return const CardListSkeleton(count: 5, height: 76);
     if (_error != null) return _errorView(c);
 
     if (_clans.isEmpty) {
@@ -462,7 +463,7 @@ class _ChatScreenState extends State<ChatScreen> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            fontSize: 16.5,
+                            fontSize: BalType.bodyLg,
                             fontWeight: FontWeight.w600,
                             color: c.text,
                           ),
@@ -471,7 +472,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         Text(
                           '${clan.membersCount} عضو',
                           style: TextStyle(
-                              fontSize: 14, color: c.textSecondary),
+                              fontSize: BalType.small, color: c.textSecondary),
                         ),
                       ],
                     ),
@@ -498,7 +499,7 @@ class _ChatScreenState extends State<ChatScreen> {
             Text(
               title,
               style: TextStyle(
-                fontSize: 18.5,
+                fontSize: BalType.title,
                 fontWeight: FontWeight.w600,
                 color: c.text,
               ),
@@ -507,7 +508,7 @@ class _ChatScreenState extends State<ChatScreen> {
             Text(
               hint,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 15, color: c.textSecondary),
+              style: TextStyle(fontSize: BalType.body, color: c.textSecondary),
             ),
           ],
         ),
@@ -527,7 +528,7 @@ class _ChatScreenState extends State<ChatScreen> {
             Text(
               _error!,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 15, color: c.textSecondary),
+              style: TextStyle(fontSize: BalType.body, color: c.textSecondary),
             ),
             const SizedBox(height: AppTheme.spaceXl),
             OutlinePillButton(

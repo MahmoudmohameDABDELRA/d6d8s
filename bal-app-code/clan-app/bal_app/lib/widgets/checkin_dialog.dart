@@ -28,10 +28,52 @@ Future<void> showCheckInDialog(
   required CheckInPrompt prompt,
   VoidCallback? onDone,
 }) async {
-  await showDialog<void>(
+  await showGeneralDialog<void>(
     context: context,
     barrierDismissible: false,
-    builder: (_) => CheckInDialog(prompt: prompt),
+    barrierLabel: 'سؤال الاطمئنان',
+    barrierColor: Colors.black54,
+    transitionDuration: AppTheme.transition,
+    pageBuilder: (_, __, ___) => CheckInDialog(prompt: prompt),
+
+    /// ═══════════════════════════════════════════════════════
+    /// ️ الدخول ده مش زينة — ده تمهيد.
+    ///
+    ///  البوب-أب ده أهم لحظة في التطبيق: بيقاطع المستخدم في
+    ///  أي شاشة ويسأله «عملت إيه؟». الظهور المفاجئ بيحسّه
+    ///  كإعلان مقتحم، فأول رد فعل يكون «اقفل».
+    ///
+    ///  الحركة بتخلي القطع مفهوم: الخلفية بتغيم بالتدريج
+    ///  (الشاشة اللي ورا بتبعد)، والكارت بيطلع من تحت وهو
+    ///  بيكبر شوية — زي حد بيقرّب منك يسأل، مش زي حاجة
+    ///  بتتزنق في وشك.
+    ///
+    ///  `easeOutBack` بيدّي وقفة خفيفة في الآخر — الحس ده
+    ///  بيخلي الكارت يبان إنه «حطّ» مش إنه «ظهر».
+    /// ═══════════════════════════════════════════════════════
+    transitionBuilder: (_, anim, __, child) {
+      final eased = CurvedAnimation(
+        parent: anim,
+        curve: Curves.easeOutBack,
+        reverseCurve: Curves.easeIn,
+      );
+      final fade = CurvedAnimation(parent: anim, curve: Curves.easeOut);
+
+      return FadeTransition(
+        opacity: fade,
+        child: SlideTransition(
+          position: Tween(
+            begin: const Offset(0, 0.12),
+            end: Offset.zero,
+          ).animate(eased),
+          child: ScaleTransition(
+            //  من 0.94 مش من الصفر — الكبر الكامل بيبان كرتوني
+            scale: Tween(begin: 0.94, end: 1.0).animate(eased),
+            child: child,
+          ),
+        ),
+      );
+    },
   );
   onDone?.call();
 }
@@ -284,7 +326,7 @@ class _CheckInDialogState extends State<CheckInDialog> {
                 Text(
                   _title,
                   style: TextStyle(
-                    fontSize: 18.5,
+                    fontSize: BalType.title,
                     fontWeight: FontWeight.w700,
                     color: c.text,
                   ),
@@ -294,7 +336,7 @@ class _CheckInDialogState extends State<CheckInDialog> {
                   widget.prompt.task.title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 14.5, color: c.textSecondary),
+                  style: TextStyle(fontSize: BalType.small, color: c.textSecondary),
                 ),
               ],
             ),
@@ -385,14 +427,14 @@ class _CheckInDialogState extends State<CheckInDialog> {
                     const SizedBox(width: 4.5),
                     Text(
                       'رسالة من التطبيق',
-                      style: TextStyle(fontSize: 12.5, color: c.textDisabled),
+                      style: TextStyle(fontSize: BalType.caption, color: c.textDisabled),
                     ),
                   ],
                 ),
               ),
             Text(
               m.text,
-              style: TextStyle(fontSize: 16.5, height: 1.5, color: fg),
+              style: TextStyle(fontSize: BalType.bodyLg, height: 1.5, color: fg),
             ),
           ],
         ),
@@ -423,7 +465,7 @@ class _CheckInDialogState extends State<CheckInDialog> {
             ),
             const SizedBox(width: AppTheme.spaceSm),
             Text('بيكتب…',
-                style: TextStyle(fontSize: 15, color: c.textSecondary)),
+                style: TextStyle(fontSize: BalType.body, color: c.textSecondary)),
           ],
         ),
       ),
@@ -440,7 +482,7 @@ class _CheckInDialogState extends State<CheckInDialog> {
       color: c.danger.withValues(alpha: 0.12),
       child: Text(
         _error!,
-        style: TextStyle(fontSize: 14.5, color: c.danger),
+        style: TextStyle(fontSize: BalType.small, color: c.danger),
       ),
     );
   }
@@ -461,10 +503,10 @@ class _CheckInDialogState extends State<CheckInDialog> {
                   minLines: 1,
                   maxLength: 1000,
                   textInputAction: TextInputAction.newline,
-                  style: TextStyle(fontSize: 16.5, color: c.text),
+                  style: TextStyle(fontSize: BalType.bodyLg, color: c.text),
                   decoration: InputDecoration(
                     hintText: 'اكتب اللي حصل…',
-                    hintStyle: TextStyle(color: c.textDisabled, fontSize: 16),
+                    hintStyle: TextStyle(color: c.textDisabled, fontSize: BalType.body),
                     counterText: '',
                     filled: true,
                     fillColor: c.surface,
@@ -504,7 +546,7 @@ class _CheckInDialogState extends State<CheckInDialog> {
               child: Text(
                 // بعد ما يرد، الخروج بقى «تمام» مش «مش دلوقتي»
                 replied ? 'تمام، شكراً' : 'مش دلوقتي',
-                style: TextStyle(color: c.textSecondary, fontSize: 15.5),
+                style: TextStyle(color: c.textSecondary, fontSize: BalType.body),
               ),
             ),
           ),

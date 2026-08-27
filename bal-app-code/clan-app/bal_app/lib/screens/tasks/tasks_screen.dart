@@ -9,6 +9,8 @@ import '../../core/theme/app_theme.dart';
 import '../../models/models.dart';
 import '../../widgets/buttons.dart';
 import '../../widgets/progress_ring.dart';
+import '../../widgets/task_check.dart';
+import '../../widgets/skeleton.dart';
 
 /// ✅ شاشة المهام — القائمة الحية (مولدة من الجبل + يدوية)
 class TasksScreen extends StatefulWidget {
@@ -105,7 +107,7 @@ class _TasksScreenState extends State<TasksScreen> {
               if (_loading)
                 const SliverFillRemaining(
                   hasScrollBody: false,
-                  child: Center(child: CircularProgressIndicator()),
+                  child: CardListSkeleton(count: 4, height: 86),
                 )
               else if (_error != null)
                 SliverFillRemaining(
@@ -137,7 +139,7 @@ class _TasksScreenState extends State<TasksScreen> {
                       padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
                       sliver: SliverToBoxAdapter(
                         child: Text('منجز',
-                            style: TextStyle(color: c.textSecondary, fontSize: 15)),
+                            style: TextStyle(color: c.textSecondary, fontSize: BalType.body)),
                       ),
                     ),
                     SliverPadding(
@@ -174,7 +176,7 @@ class _TasksScreenState extends State<TasksScreen> {
             children: [
               Text('مهامك',
                   style: TextStyle(
-                      fontSize: 32,
+                      fontSize: BalType.display,
                       fontWeight: FontWeight.w700,
                       color: c.text)),
               const Spacer(),
@@ -194,7 +196,7 @@ class _TasksScreenState extends State<TasksScreen> {
               const SizedBox(width: 14),
               Text(
                 '${_tasks.where((t) => !t.isCompleted).length} باقي',
-                style: TextStyle(color: c.textSecondary, fontSize: 15),
+                style: TextStyle(color: c.textSecondary, fontSize: BalType.body),
               ),
             ],
           ),
@@ -213,7 +215,7 @@ class _TasksScreenState extends State<TasksScreen> {
             Icon(Icons.cloud_off_rounded, size: 64.5, color: c.textDisabled),
             const SizedBox(height: 18.5),
             Text('مفيش اتصال بالباك',
-                style: TextStyle(fontSize: 20.5, fontWeight: FontWeight.w600, color: c.text)),
+                style: TextStyle(fontSize: BalType.titleLg, fontWeight: FontWeight.w600, color: c.text)),
             const SizedBox(height: 23),
             OutlinePillButton(label: 'إعادة المحاولة', icon: Icons.refresh_rounded, onPressed: _load),
           ],
@@ -232,7 +234,7 @@ class _TasksScreenState extends State<TasksScreen> {
             Icon(Icons.task_alt_rounded, size: 80.5, color: c.textDisabled),
             const SizedBox(height: 18.5),
             Text('يومك فاضي — أحلى حاجة',
-                style: TextStyle(fontSize: 20.5, fontWeight: FontWeight.w600, color: c.text)),
+                style: TextStyle(fontSize: BalType.titleLg, fontWeight: FontWeight.w600, color: c.text)),
             const SizedBox(height: 9),
             // ️ كانت بتقول «هتيجي لوحدها» وهي مش بتيجي إلا لما
             //    المستخدم يوافق على جبله. الوعد الكاذب أسوأ من الصمت.
@@ -278,29 +280,16 @@ class _TaskTile extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // زر الإنجاز
-          GestureDetector(
+          /// زر الإنجاز — العلامة بترتسم خط بخط مع نبضة.
+          /// ️ دي واحدة من ٣ لحظات بس في التطبيق فيها حركة:
+          ///    الإنجاز، الصعود في الجبل، وظهور بوب-أب الاطمئنان.
+          ///    الباقي ساكن عن قصد — الحركة اللي مالهاش معنى
+          ///    بتبطّئ الإحساس مش بتحسّنه.
+          TaskCheckButton(
+            isCompleted: task.isCompleted,
             onTap: onComplete,
-            child: AnimatedContainer(
-              duration: AppTheme.standard,
-              width: 34.5,
-              height: 34.5,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: task.isCompleted ? c.primary : Colors.transparent,
-                border: Border.all(
-                  color: task.isCompleted ? c.primary : c.textDisabled,
-                  width: 2.5,
-                ),
-              ),
-              child: task.isCompleted
-                  ? Icon(Icons.check_rounded,
-                      size: 20.5,
-                      color: c.isDark ? const Color(0xFF0A1F14) : Colors.white)
-                  : null,
-            ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 8),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -311,7 +300,7 @@ class _TaskTile extends StatelessWidget {
                       child: Text(
                         task.title,
                         style: TextStyle(
-                          fontSize: 17.5,
+                          fontSize: BalType.bodyLg,
                           fontWeight: FontWeight.w600,
                           color: task.isCompleted ? c.textDisabled : c.text,
                           decoration: task.isCompleted
@@ -336,7 +325,7 @@ class _TaskTile extends StatelessWidget {
                             Icon(Icons.terrain_rounded, size: 11.5, color: c.primary),
                             const SizedBox(width: 3.5),
                             Text('من الجبل',
-                                style: TextStyle(fontSize: 10.5, color: c.primary, fontWeight: FontWeight.w600)),
+                                style: TextStyle(fontSize: BalType.micro, color: c.primary, fontWeight: FontWeight.w600)),
                           ],
                         ),
                       ),
@@ -347,7 +336,7 @@ class _TaskTile extends StatelessWidget {
                   const SizedBox(height: 3.5),
                   Text(
                     '${task.startTime ?? '--'} - ${task.endTime ?? '--'}',
-                    style: TextStyle(color: c.textSecondary, fontSize: 14),
+                    style: TextStyle(color: c.textSecondary, fontSize: BalType.small),
                   ),
                 ],
               ],
@@ -437,7 +426,7 @@ class _AddTaskSheetState extends State<_AddTaskSheet> {
             const SizedBox(height: 23),
             Text('مهمة جديدة',
                 style: TextStyle(
-                    fontSize: 23, fontWeight: FontWeight.w700, color: c.text)),
+                    fontSize: BalType.titleLg, fontWeight: FontWeight.w700, color: c.text)),
             const SizedBox(height: 18.5),
             TextField(
               controller: _title,

@@ -177,7 +177,7 @@ class _ChallengeRoomScreenState extends State<ChallengeRoomScreen> {
               Text(
                 ch.title,
                 style: TextStyle(
-                  fontSize: 22,
+                  fontSize: BalType.titleLg,
                   fontWeight: FontWeight.w700,
                   color: c.text,
                 ),
@@ -186,7 +186,7 @@ class _ChallengeRoomScreenState extends State<ChallengeRoomScreen> {
                 const SizedBox(height: 4.5),
                 Text(
                   'من ${ch.hostName}',
-                  style: TextStyle(fontSize: 14.5, color: c.textSecondary),
+                  style: TextStyle(fontSize: BalType.small, color: c.textSecondary),
                 ),
               ],
               const SizedBox(height: AppTheme.spaceLg),
@@ -211,7 +211,7 @@ class _ChallengeRoomScreenState extends State<ChallengeRoomScreen> {
             Text(
               'مستنيين البداية',
               style: TextStyle(
-                fontSize: 17.5,
+                fontSize: BalType.bodyLg,
                 fontWeight: FontWeight.w600,
                 color: c.text,
               ),
@@ -227,7 +227,7 @@ class _ChallengeRoomScreenState extends State<ChallengeRoomScreen> {
               child: Text(
                 '${ch.peopleCount}',
                 style: TextStyle(
-                  fontSize: 13.5,
+                  fontSize: BalType.small,
                   fontWeight: FontWeight.w700,
                   color: c.primary,
                 ),
@@ -260,7 +260,7 @@ class _ChallengeRoomScreenState extends State<ChallengeRoomScreen> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 12.5, color: c.textSecondary),
+                        style: TextStyle(fontSize: BalType.caption, color: c.textSecondary),
                       ),
                     ),
                   ],
@@ -299,7 +299,7 @@ class _ChallengeRoomScreenState extends State<ChallengeRoomScreen> {
                     Expanded(
                       child: Text(
                         'مستنيين ${ch.hostName ?? 'صاحب التحدي'} يبدأ',
-                        style: TextStyle(fontSize: 15, color: c.textSecondary),
+                        style: TextStyle(fontSize: BalType.body, color: c.textSecondary),
                       ),
                     ),
                   ],
@@ -332,12 +332,12 @@ class _ChallengeRoomScreenState extends State<ChallengeRoomScreen> {
           const SizedBox(height: AppTheme.spaceSm),
           Text(
             'لسه محدش دخل',
-            style: TextStyle(fontSize: 15, color: c.textSecondary),
+            style: TextStyle(fontSize: BalType.body, color: c.textSecondary),
           ),
           const SizedBox(height: 2.5),
           Text(
             'الإشعار وصلهم — استنى شوية',
-            style: TextStyle(fontSize: 13.5, color: c.textDisabled),
+            style: TextStyle(fontSize: BalType.small, color: c.textDisabled),
           ),
         ],
       ),
@@ -362,7 +362,7 @@ class _ChallengeRoomScreenState extends State<ChallengeRoomScreen> {
             Text(
               ch.status == 'FINISHED' ? 'التحدي خلص 🎉' : 'التحدي اتلغى',
               style: TextStyle(
-                fontSize: 20.5,
+                fontSize: BalType.titleLg,
                 fontWeight: FontWeight.w600,
                 color: c.text,
               ),
@@ -385,12 +385,12 @@ class _ChallengeRoomScreenState extends State<ChallengeRoomScreen> {
           Text(
             value,
             style: TextStyle(
-              fontSize: 20.5,
+              fontSize: BalType.titleLg,
               fontWeight: FontWeight.w700,
               color: color ?? c.text,
             ),
           ),
-          Text(label, style: TextStyle(fontSize: 13, color: c.textSecondary)),
+          Text(label, style: TextStyle(fontSize: BalType.caption, color: c.textSecondary)),
         ],
       ),
     );
@@ -410,7 +410,7 @@ class _ChallengeRoomScreenState extends State<ChallengeRoomScreen> {
             const SizedBox(height: AppTheme.spaceLg),
             Text(_error!,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 15, color: c.textSecondary)),
+                style: TextStyle(fontSize: BalType.body, color: c.textSecondary)),
             const SizedBox(height: AppTheme.spaceXl),
             OutlinePillButton(
               label: 'جرّب تاني',

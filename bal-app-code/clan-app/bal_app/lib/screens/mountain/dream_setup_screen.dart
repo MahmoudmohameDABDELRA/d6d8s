@@ -175,11 +175,11 @@ class _DreamSetupScreenState extends State<DreamSetupScreen> {
           const SizedBox(height: 18.5),
           Text('اكتب حلمك',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 25.5, fontWeight: FontWeight.w700, color: c.text)),
+              style: TextStyle(fontSize: BalType.heading, fontWeight: FontWeight.w700, color: c.text)),
           const SizedBox(height: 9),
           Text('مثال: عاوز أكون CEO · أتعلم Flutter · أكون مدير منتج',
               textAlign: TextAlign.center,
-              style: TextStyle(color: c.textSecondary, fontSize: 15)),
+              style: TextStyle(color: c.textSecondary, fontSize: BalType.body)),
           const SizedBox(height: 27.5),
           GlassCard(
             child: TextField(
@@ -214,7 +214,7 @@ class _DreamSetupScreenState extends State<DreamSetupScreen> {
         Row(
           children: [
             Text('الرفيق بيسأل',
-                style: TextStyle(fontSize: 25.5, fontWeight: FontWeight.w700, color: c.text)),
+                style: TextStyle(fontSize: BalType.heading, fontWeight: FontWeight.w700, color: c.text)),
             const Spacer(),
             Text('${q.length} أسئلة',
                 style: TextStyle(color: c.textSecondary)),
@@ -228,10 +228,10 @@ class _DreamSetupScreenState extends State<DreamSetupScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('سؤال ${i + 1}',
-                    style: TextStyle(color: c.accent, fontSize: 14, fontWeight: FontWeight.w600)),
+                    style: TextStyle(color: c.accent, fontSize: BalType.small, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 7),
                 Text('${q[i]['question']}',
-                    style: TextStyle(fontSize: 17.5, fontWeight: FontWeight.w500, color: c.text)),
+                    style: TextStyle(fontSize: BalType.bodyLg, fontWeight: FontWeight.w500, color: c.text)),
                 const SizedBox(height: 14),
                 for (var j = 0; j < (q[i]['options'] as List).length; j++)
                   Padding(
@@ -266,7 +266,7 @@ class _DreamSetupScreenState extends State<DreamSetupScreen> {
       padding: const EdgeInsets.all(AppTheme.spaceXxl),
       children: [
         Text('خطة الرفيق لحلمك',
-            style: TextStyle(fontSize: 25.5, fontWeight: FontWeight.w700, color: c.text)),
+            style: TextStyle(fontSize: BalType.heading, fontWeight: FontWeight.w700, color: c.text)),
         const SizedBox(height: 4.5),
         Text('قسم حلمك لـ ${steps.length} حقول — من القاع للقمة',
             style: TextStyle(color: c.textSecondary)),
@@ -290,14 +290,14 @@ class _DreamSetupScreenState extends State<DreamSetupScreen> {
                           child: i == steps.length - 1
                               ? Icon(Icons.flag_rounded, size: 15, color: const Color(0xFF0A1F14))
                               : Text('${i + 1}',
-                                  style: TextStyle(fontSize: 14, color: c.primary, fontWeight: FontWeight.w700)),
+                                  style: TextStyle(fontSize: BalType.small, color: c.primary, fontWeight: FontWeight.w700)),
                         ),
                       ),
                       const SizedBox(width: 14),
                       Expanded(
                         child: Text(steps[i]['title']?.toString() ?? '',
                             style: TextStyle(
-                                fontSize: 17.5,
+                                fontSize: BalType.bodyLg,
                                 fontWeight: i == steps.length - 1 ? FontWeight.w600 : FontWeight.w400,
                                 color: i == steps.length - 1 ? c.accent : c.text)),
                       ),
@@ -336,7 +336,7 @@ class _DreamSetupScreenState extends State<DreamSetupScreen> {
             Icon(Icons.flag_rounded, size: 92, color: c.accent),
             const SizedBox(height: 23),
             Text('الجبل اتبنى! 🏔️',
-                style: TextStyle(fontSize: 27.5, fontWeight: FontWeight.w700, color: c.text)),
+                style: TextStyle(fontSize: BalType.heading, fontWeight: FontWeight.w700, color: c.text)),
             const SizedBox(height: 9),
             Text('رجع للجبل وهتشوف خطتك من تحت للقمة',
                 style: TextStyle(color: c.textSecondary)),
@@ -390,7 +390,7 @@ class _OptionTile extends StatelessWidget {
             const SizedBox(width: 11.5),
             Expanded(
               child: Text(label,
-                  style: TextStyle(fontSize: 15.5, color: c.text)),
+                  style: TextStyle(fontSize: BalType.body, color: c.text)),
             ),
           ],
         ),

@@ -138,7 +138,7 @@ class FloatingNavBar extends StatelessWidget {
               Text(
                 item.label,
                 style: TextStyle(
-                  fontSize: 11,
+                  fontSize: BalType.micro,
                   fontWeight: active ? FontWeight.w600 : FontWeight.w400,
                   color: active ? c.primary : c.textDisabled,
                 ),

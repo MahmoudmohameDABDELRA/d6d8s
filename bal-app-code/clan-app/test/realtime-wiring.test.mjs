@@ -109,10 +109,21 @@ test('الرسالة بتتفلتر على محادثتها', () => {
    *    رسالة من محادثة تانية هتظهر في الشاشة المفتوحة.
    */
   const conv = read('screens/chat/conversation_screen.dart');
+
+  /**
+   * ️ الفلتر اتنقل لدالة `_isMine` بدل ما يكون مكتوب جوه
+   *    المستمع — عشان بقى بيتستخدم في أكتر من مكان. الفحص
+   *    بيدوّر على المقارنة نفسها في أي مكان في الملف.
+   */
   assert.match(
     conv,
-    /cid != widget\.conversationId/,
+    /cid\s*(!==?|==)\s*widget\.conversationId/,
     'الرسايل مش متفلترة على المحادثة',
+  );
+  assert.match(
+    conv,
+    /onMessage\.listen/,
+    'مفيش استماع لرسايل السوكيت',
   );
 });
 
