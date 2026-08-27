@@ -31,6 +31,17 @@ class _AlarmsScreenState extends State<AlarmsScreen> {
   bool _loading = true;
   String? _error;
 
+  /// ️ إحصائيات الاستيقاظ من `/alarms/history`.
+  ///
+  ///    المسار ده كان **معرَّف ومش مستخدم**. الشاشة كانت بتحسب
+  ///    الستريك من `wakeStreak` اللي جوه كروت المنبهات — وده
+  ///    بيدّي رقم ناقص: بيعدّ الصحيان بس. المرات اللي المستخدم
+  ///    فوّت فيها المنبه مكانتش بتظهر خالص، فالسلسلة كانت
+  ///    بتبان أحسن من الحقيقة.
+  ///
+  ///    السيرفر بيحسب الاتنين + نسبة النجاح + متوسط سرعة الرد.
+  Map<String, dynamic>? _stats;
+
   @override
   void initState() {
     super.initState();
@@ -39,7 +50,17 @@ class _AlarmsScreenState extends State<AlarmsScreen> {
 
   Future<void> _load() async {
     try {
-      final res = await ApiClient.instance.get(ApiEndpoints.alarms);
+      /// ️ الاتنين على التوازي — الإحصائيات مش شرط للعرض،
+      ///    فلو وقعت لوحدها الشاشة تفضل شغالة.
+      final results = await Future.wait([
+        ApiClient.instance.get(ApiEndpoints.alarms),
+        ApiClient.instance
+            .get(ApiEndpoints.alarmHistory, query: {'limit': 30})
+            .catchError((_) => <String, dynamic>{}),
+      ]);
+
+      final res = results[0];
+      final history = results[1];
       final list = res['alarms'] as List? ?? const [];
       if (!mounted) return;
       setState(() {
@@ -47,6 +68,7 @@ class _AlarmsScreenState extends State<AlarmsScreen> {
             .whereType<Map<String, dynamic>>()
             .map(BalAlarm.fromJson)
             .toList();
+        _stats = (history['stats'] as Map?)?.cast<String, dynamic>();
         _loading = false;
         _error = null;
       });
@@ -143,7 +165,7 @@ class _AlarmsScreenState extends State<AlarmsScreen> {
                             padding: const EdgeInsets.fromLTRB(
                                 AppTheme.spaceXl, 0, AppTheme.spaceXl, 40),
                             children: [
-                              if (_bestStreak > 0) _streakCard(c),
+                              if (_hasStreak) _streakCard(c),
                               const SizedBox(height: AppTheme.spaceMd),
                               ..._alarms.map((a) => _alarmCard(c, a)),
                               const SizedBox(height: AppTheme.spaceXl),
@@ -155,37 +177,102 @@ class _AlarmsScreenState extends State<AlarmsScreen> {
     );
   }
 
-  int get _bestStreak => _alarms.isEmpty
-      ? 0
-      : _alarms.map((a) => a.wakeStreak).reduce((a, b) => a > b ? a : b);
+  /// ️ السلسلة من السيرفر لو متاحة.
+  ///
+  ///    الحساب المحلي (أعلى `wakeStreak` في الكروت) بيتجاهل
+  ///    المرات اللي المستخدم فوّت فيها المنبه، فبيدّي رقم
+  ///    متفائل غلط. السيرفر شايف سجل الاستيقاظ كامل.
+  int get _bestStreak {
+    final fromServer = (_stats?['currentStreak'] as num?)?.toInt();
+    if (fromServer != null) return fromServer;
+
+    return _alarms.isEmpty
+        ? 0
+        : _alarms.map((a) => a.wakeStreak).reduce((a, b) => a > b ? a : b);
+  }
+
+  bool get _hasStreak => _bestStreak > 0 || (_stats?['total'] as num? ?? 0) > 0;
 
   Widget _streakCard(BalColors c) {
+    final total = (_stats?['total'] as num?)?.toInt() ?? 0;
+    final missed = (_stats?['missed'] as num?)?.toInt() ?? 0;
+    final rate = (_stats?['successRate'] as num?)?.toInt();
+    final longest = (_stats?['longestStreak'] as num?)?.toInt() ?? 0;
+
     return GlassCard(
-      child: Row(
+      child: Column(
         children: [
-          Icon(Icons.local_fire_department_rounded, color: c.accent, size: 32),
-          const SizedBox(width: AppTheme.spaceMd),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          Row(
+            children: [
+              Icon(Icons.local_fire_department_rounded,
+                  color: c.accent, size: 32),
+              const SizedBox(width: AppTheme.spaceMd),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '$_bestStreak يوم ورا بعض',
+                      style: TextStyle(
+                        fontSize: BalType.title,
+                        fontWeight: FontWeight.w700,
+                        color: c.text,
+                      ),
+                    ),
+                    Text(
+                      longest > _bestStreak
+                          ? 'صحيت في معادك · أطول سلسلة $longest'
+                          : 'صحيت في معادك',
+                      style: TextStyle(
+                          fontSize: BalType.small, color: c.textSecondary),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          /// ️ الصف ده بيعرض **المرات اللي فاتت** كمان.
+          ///
+          ///    عرض النجاحات بس بيدّي إحساس كاذب. المستخدم اللي
+          ///    صحي ٣ من ١٠ لازم يشوف الـ١٠ — الرقم الصادق هو
+          ///    اللي بيخلي التحسّن معناه حقيقي.
+          if (total > 0) ...[
+            const SizedBox(height: AppTheme.spaceMd),
+            Divider(color: c.border, height: 1),
+            const SizedBox(height: AppTheme.spaceMd),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                Text(
-                  '$_bestStreak يوم ورا بعض',
-                  style: TextStyle(
-                    fontSize: BalType.title,
-                    fontWeight: FontWeight.w700,
-                    color: c.text,
-                  ),
-                ),
-                Text(
-                  'صحيت في معادك',
-                  style: TextStyle(fontSize: BalType.small, color: c.textSecondary),
-                ),
+                _stat(c, '$total', 'منبه'),
+                _stat(c, '${total - missed}', 'صحيت'),
+                _stat(c, '$missed', 'فاتك', danger: missed > 0),
+                if (rate != null) _stat(c, '$rate%', 'نجاح'),
               ],
             ),
-          ),
+          ],
         ],
       ),
+    );
+  }
+
+  Widget _stat(BalColors c, String value, String label,
+      {bool danger = false}) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: BalType.bodyLg,
+            fontWeight: FontWeight.w700,
+            color: danger ? c.danger : c.text,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(fontSize: BalType.caption, color: c.textSecondary),
+        ),
+      ],
     );
   }
 

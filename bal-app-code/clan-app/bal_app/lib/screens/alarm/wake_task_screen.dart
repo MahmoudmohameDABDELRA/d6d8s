@@ -39,6 +39,10 @@ class _WakeTaskScreenState extends State<WakeTaskScreen> {
   final _answer = TextEditingController();
   final _focus = FocusNode();
 
+  /// كام مرة ضغط «غفوة» — بيتبعت للسيرفر عشان الرد يتصاعد
+  int _snoozes = 0;
+  bool _snoozing = false;
+
   String? _question;
   String? _token;
   bool _loading = true;
@@ -143,6 +147,92 @@ class _WakeTaskScreenState extends State<WakeTaskScreen> {
     }
   }
 
+  /// 😴 غفوة — `POST /alarms/snooze`
+  ///
+  /// ️ المسار ده كان **معرَّف في التطبيق ومش مستخدم**، والمنبه
+  ///    مكانش فيه زرار غفوة أصلاً. النتيجة إن المستخدم اللي مش
+  ///    قادر يقوم مكانش قدامه غير إنه يقفل التطبيق — وساعتها
+  ///    مفيش أي تسجيل، فالإحصائيات بتقول إنه صحي.
+  ///
+  ///    السيرفر بيرد بنداء Gemini حقيقي: جملة تحفيزية ساخرة
+  ///    بتتصاعد مع رقم الغفوة. فالغفوة بقت جزء من التجربة مش
+  ///    هروب منها.
+  Future<void> _snooze() async {
+    if (_snoozing) return;
+    setState(() => _snoozing = true);
+
+    try {
+      final res = await ApiClient.instance.post(
+        ApiEndpoints.alarmSnooze,
+        body: {'count': _snoozes + 1, 'alarmId': widget.alarmId},
+      );
+      if (!mounted) return;
+
+      setState(() {
+        _snoozes += 1;
+        _snoozing = false;
+      });
+
+      final line = (res['message'] ?? res['text'] ?? '').toString();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(line.isEmpty ? 'خمس دقايق وبس 😴' : line),
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _snoozing = false);
+
+      final s = e.toString();
+
+      /// ️ 429 = ضغطة مزدوجة. السيرفر بيقفل نداء AI واحد لكل
+      ///    غفوة. مش خطأ يستاهل رسالة مفزعة.
+      if (s.contains('429')) return;
+
+      /// ️ 502 / AI_UNAVAILABLE = الرفيق مش متاح (مفيش مفتاح
+      ///    Gemini أو الخدمة واقعة). اتأكدنا بالتشغيل إن ده
+      ///    الرد الفعلي في البيئة اللي مفيهاش مفتاح.
+      ///
+      ///    الغفوة نفسها **اتسجّلت** — اللي فشل هو الجملة
+      ///    التحفيزية بس. فمنعرضش خطأ: نعرض رسالة عادية.
+      ///    عرض «فشل» على حاجة نجحت بيخلي المستخدم يعيد
+      ///    الضغط بلا داعي.
+      if (s.contains('AI_UNAVAILABLE') || s.contains('502')) {
+        setState(() => _snoozes += 1);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('خمس دقايق وبس 😴')),
+        );
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(humanError(e, fallback: 'الغفوة مانفعتش'))),
+      );
+    }
+  }
+
+  /// ⏰ تسجيل إن المنبه فات — `POST /alarms/missed`
+  ///
+  /// ️ من غير النداء ده، المنبه اللي المستخدم تجاهله **مبيتسجّلش
+  ///    خالص**. السلسلة بتفضل شايفة النجاحات بس، فالرقم بيبان
+  ///    أحسن من الحقيقة — والمستخدم بيفقد الثقة فيه أول ما
+  ///    يلاحظ. الرقم الصادق أنفع من الرقم المريح.
+  Future<void> _reportMissed() async {
+    try {
+      await ApiClient.instance.post(
+        ApiEndpoints.alarmMissed,
+        body: {
+          'alarmId': widget.alarmId,
+          'scheduledTime': widget.scheduledTime,
+        },
+      );
+    } catch (_) {
+      /// فشل التسجيل ما يوقفش المستخدم — الإحصائية أهم من
+      /// إنها تبقى كاملة ١٠٠٪، بس مش أهم من إنه يكمّل يومه.
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = BalColors(context);
@@ -151,6 +241,20 @@ class _WakeTaskScreenState extends State<WakeTaskScreen> {
       /// ️ في الصحيان الحقيقي ممنوع الخروج بزرار الرجوع — ده كان
       ///    هيبقى باب خلفي يقفل بيه المنبه من غير ما يحل.
       canPop: widget.isPreview,
+
+      /// ️ لكن الخروج ممكن يحصل بره إرادتنا: نظام التشغيل يقتل
+      ///    التطبيق، أو المستخدم يقفله من قائمة المهام. ساعتها
+      ///    المنبه **فات** — ولازم يتسجّل.
+      ///
+      ///    من غير ده، الإحصائيات بتشوف النجاحات بس، فالسلسلة
+      ///    بتبان أحسن من الحقيقة. ودي مشكلة أعمق من رقم غلط:
+      ///    الرقم اللي المستخدم يكتشف إنه بيجامله بيفقد قيمته
+      ///    كله.
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) return;
+        //  الحل الناجح بيرجّع true — أي خروج تاني = فات
+        if (!widget.isPreview && result != true) _reportMissed();
+      },
       child: Scaffold(
         backgroundColor: c.background,
         appBar: widget.isPreview
@@ -271,6 +375,26 @@ class _WakeTaskScreenState extends State<WakeTaskScreen> {
           loading: _checking,
           onPressed: _submit,
         ),
+
+        /// ️ زرار الغفوة تحت زرار الحل مش جنبه، وبشكل أخفت.
+        ///    الترتيب البصري ده مقصود: الحل هو الفعل الأساسي،
+        ///    والغفوة مخرج موجود بس مش مغري.
+        if (!widget.isPreview) ...[
+          const SizedBox(height: AppTheme.spaceMd),
+          TextButton.icon(
+            onPressed: _snoozing ? null : _snooze,
+            icon: Icon(Icons.snooze_rounded, size: 20, color: c.textSecondary),
+            label: Text(
+              _snoozes == 0 ? 'غفوة 5 دقايق' : 'غفوة تانية ($_snoozes)',
+              style:
+                  TextStyle(fontSize: BalType.small, color: c.textSecondary),
+            ),
+            style: TextButton.styleFrom(
+              //  مساحة لمس كاملة — الزرار ده بيتضغط والعين نص مقفولة
+              minimumSize: const Size(0, 48),
+            ),
+          ),
+        ],
       ],
     );
   }
