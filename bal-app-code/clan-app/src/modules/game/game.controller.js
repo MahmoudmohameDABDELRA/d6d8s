@@ -104,9 +104,30 @@ export const listGames = asyncHandler(async (req, res) => {
 
 export const createRoom = asyncHandler(async (req, res) => {
   const userId = req.user.userId;
-  const { type = 'SNAKE', maxPlayers } = req.body ?? {};
+  const { type = 'SNAKE', maxPlayers, clanId } = req.body ?? {};
 
   requireBreak();
+
+  /**
+   * ️ الغرفة بتتربط بعشيرة، والانضمام بيتقصر على أعضائها.
+   *
+   *    من غير الربط ده كان أي حد معاه الكود يدخل — أثبتناه
+   *    بالتشغيل: مستخدم غريب تماماً دخل غرفة وHTTP 200.
+   *    كود من 6 حروف مش سر، والغرف بتتعمل وقت الراحة لما
+   *    الناس بتكون بتشارك الشاشة.
+   *
+   *    `clanId` اختياري للتوافق: من غيره الغرفة فردية بالكود
+   *    (السلوك القديم) — والواجهة بتبعته دايماً.
+   */
+  if (clanId) {
+    const membership = await prisma.clanMember.findUnique({
+      where: { userId_clanId: { userId, clanId } },
+      select: { id: true },
+    });
+    if (!membership) {
+      throw forbidden('لازم تكون عضو في العشيرة عشان تعمل غرفة ليها', 'NOT_CLAN_MEMBER');
+    }
+  }
 
   const game = GAMES.find((g) => g.type === type);
   if (!game) {
@@ -137,6 +158,7 @@ export const createRoom = asyncHandler(async (req, res) => {
         type,
         code: genCode(),
         hostId: userId,
+        clanId: clanId ?? null,
         maxPlayers: cap,
         expiresAt: breakEndsAt(),
       },
@@ -187,6 +209,23 @@ export const joinRoom = asyncHandler(async (req, res) => {
   }
 
   if (room.status === 'FINISHED') throw badRequest('انتهت اللعبة');
+
+  /**
+   * ️ العضوية في العشيرة شرط — ده اللي كان ناقص.
+   *
+   *    الفحوص القديمة (وقت الراحة · الصلاحية · الامتلاء) مكانتش
+   *    بتسأل **مين** بيدخل. الغرف المربوطة بعشيرة بقت مقفولة
+   *    على أعضائها.
+   */
+  if (room.clanId) {
+    const membership = await prisma.clanMember.findUnique({
+      where: { userId_clanId: { userId, clanId: room.clanId } },
+      select: { id: true },
+    });
+    if (!membership) {
+      throw forbidden('اللعبة دي لأعضاء العشيرة بس', 'NOT_CLAN_MEMBER');
+    }
+  }
 
   if (room._count.players >= room.maxPlayers) {
     throw badRequest('الغرفة ممتلئة', 'ROOM_FULL');

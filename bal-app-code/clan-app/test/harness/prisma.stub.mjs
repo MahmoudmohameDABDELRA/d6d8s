@@ -3,6 +3,7 @@
  * بيخزّن ويقرا فعلاً عشان نمشي فلو المستخدم كامل.
  */
 export const calls = [];
+export const DEBUG_DB = () => [...db.keys()];
 const db = new Map();
 let seq = 0;
 
@@ -64,12 +65,36 @@ const withDefaults = (name, data) => {
 };
 const rows = (m) => { if (!db.has(m)) db.set(m, []); return db.get(m); };
 
+/** العلاقات اللي اسم جدولها مش مجرد صيغة المفرد */
+const RELATION_TABLE = {
+  participants: 'focusChallengeParticipant',
+  players: 'gameRoomPlayer',
+  members: 'clanMember',
+  days: 'journeyDay',
+  steps: 'goalStep',
+  messages: 'message',
+  notifications: 'notification',
+  tasks: 'task',
+};
+
 const matches = (row, where = {}) => {
   for (const [k, v] of Object.entries(where)) {
     if (k === 'AND') { if (!v.every((w) => matches(row, w))) return false; continue; }
     if (k === 'OR')  { if (!v.some((w) => matches(row, w))) return false; continue; }
     if (k === 'NOT') { if (matches(row, v)) return false; continue; }
     if (v && typeof v === 'object' && !Array.isArray(v) && !(v instanceof Date)) {
+      /**
+       * ️ `path` لازم **قبل** `equals` — الاتنين موجودين في نفس
+       *    الكائن: `data: { path: ['taskId'], equals: x }`. لو
+       *    فحصنا equals الأول هنقارن كائن data كله بالقيمة ونفشل.
+       *    ده اللي خلّى فحص «منع التكرار» يقول إنه مكسور وهو شغّال.
+       */
+      if ('path' in v && 'equals' in v) {
+        let cur = row[k];
+        for (const seg of v.path) cur = cur?.[seg];
+        if (cur !== v.equals) return false;
+        continue;
+      }
       if ('in' in v)     { if (!v.in.includes(row[k])) return false; continue; }
       if ('not' in v)    { if (row[k] === v.not) return false; continue; }
       if ('equals' in v) { if (row[k] !== v.equals) return false; continue; }
@@ -109,6 +134,49 @@ const model = (name) => new Proxy({}, {
             for (const f of Object.keys(cfg?.select ?? {})) out._count[f] = 0;
             continue;
           }
+          /**
+           * ️ العلاقة الجمع بتترجع من الجدول الحقيقي.
+           *
+           *    كانت بترجع `[]` دايماً، فالفحص كان بيقول
+           *    «المشاركين: 0» و«اللاعبين: 0» رغم إن الانضمام
+           *    نجح فعلاً — إنذار كاذب كان هيخفي مشكلة حقيقية
+           *    لو حصلت.
+           *
+           *    بنخمّن اسم الجدول من اسم العلاقة، وبنربط بالمفتاح
+           *    الأجنبي `<name>Id`.
+           */
+          if (rel.endsWith('s')) {
+            const child = RELATION_TABLE[rel] ?? rel.slice(0, -1);
+            const all = db.get(child) ?? [];
+
+            /**
+             * ️ اسم المفتاح الأجنبي مش دايماً `<model>Id`.
+             *    `GameRoomPlayer` بيستخدم `roomId` مش `gameRoomId`،
+             *    و`FocusChallengeParticipant` بيستخدم `challengeId`.
+             *    فبدل ما نخمّن الاسم، بنقبل أي حقل ينتهي بـ Id
+             *    وقيمته = معرّف الصف الأب.
+             */
+            let kids = all.filter((r2) =>
+              Object.entries(r2).some(([key, val]) => key.endsWith('Id') && val === row.id),
+            );
+            if (cfg?.where) kids = kids.filter((r2) => matches(r2, cfg.where));
+
+            /** include متداخل جوه العلاقة (user مثلاً) */
+            out[rel] = kids.map((kid) => {
+              if (!cfg?.include) return kid;
+              const enriched = { ...kid };
+              for (const sub of Object.keys(cfg.include)) {
+                const subId = kid[`${sub}Id`];
+                const subRows = db.get(sub) ?? [];
+                enriched[sub] = subRows.find((x) => x.id === subId)
+                  ?? { id: subId ?? `${sub}-1`, username: 'عضو' };
+              }
+              return enriched;
+            });
+            continue;
+          }
+
+          /** علاقة مفردة بـ include متداخل: clan: { include: { _count } } */
           if (cfg && typeof cfg === 'object' && cfg.include) {
             const inner = { id: `${rel}-1`, name: 'عنصر', title: 'عنصر' };
             for (const [ir, icfg] of Object.entries(cfg.include)) {
@@ -120,9 +188,11 @@ const model = (name) => new Proxy({}, {
             out[rel] = inner;
             continue;
           }
-          out[rel] = rel.endsWith('s')
-            ? []
-            : { id: `${rel}-1`, username: 'عضو', title: 'عنصر', profileImage: null };
+
+          /** علاقة مفردة: الصف الحقيقي بالمفتاح الأجنبي لو موجود */
+          const fkId = row[`${rel}Id`];
+          out[rel] = (db.get(rel) ?? []).find((x) => x.id === fkId)
+            ?? { id: fkId ?? `${rel}-1`, username: 'عضو', title: 'عنصر', profileImage: null };
         }
         return out;
       };

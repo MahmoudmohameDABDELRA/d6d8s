@@ -531,6 +531,7 @@ model Clan {
   @@index([leaderId])
   @@index([type])
   focusChallenges FocusChallenge[]
+  gameRooms       GameRoom[]
 }
 
 model ClanMember {
@@ -1465,6 +1466,15 @@ model GameRoom {
   hostId   String
   maxPlayers Int          @default(8)
 
+  /// ⚠️ العشيرة المالكة للغرفة — الانضمام مقصور على أعضائها.
+  ///
+  ///    قبل الحقل ده كان `joinRoom` بيتحقق من وقت الراحة والامتلاء
+  ///    بس. أي حد معاه الكود كان بيدخل — أثبتناه بالتشغيل: مستخدم
+  ///    غريب تماماً (مش في العشيرة ولا الجلسة) دخل وHTTP 200.
+  ///
+  ///    null = غرفة قديمة من قبل القيد (تفضل مفتوحة بالكود).
+  clanId   String?
+
   /// اللحظة التي يجب أن تُغلق فيها الغرفة (نهاية الراحة)
   expiresAt DateTime
   startedAt DateTime?
@@ -1473,10 +1483,12 @@ model GameRoom {
   createdAt DateTime @default(now())
 
   host    User             @relation("GameHost", fields: [hostId], references: [id], onDelete: Cascade)
+  clan    Clan?            @relation(fields: [clanId], references: [id], onDelete: Cascade)
   players GameRoomPlayer[]
 
   @@index([status, expiresAt])
   @@index([hostId])
+  @@index([clanId])
 }
 
 model GameRoomPlayer {
