@@ -60,15 +60,30 @@ ok(me.status === 200 && me.body?.user?.onboarded === true, 'الأونبوردن
 console.log('\n═══ 2. الجبل → المهام ═══');
 
 /**
- * ️ مسار الحلم محتاج Gemini. من غير مفتاح بيرجع 503 صريح —
- *    وده السلوك الصح (لا خطة وهمية). بنتأكد إنه بيقولها بوضوح.
+ * ️ مسار الحلم محتاج Gemini، والفحص ده بيشتغل في حالتين:
+ *
+ *   · `npm run harness`     → بلا مفتاح: لازم 503 صريح
+ *                              (السلوك الصح — لا خطة وهمية)
+ *   · `npm run harness:ai`  → ببديل: لازم 201 وأسئلة
+ *
+ *  الفحص كان بيفترض الحالة الأولى بس، فكان بيقع لما نشغّله
+ *  على السيرفر ببديل الـ AI. الافتراض الضمني بيخلي الفحص
+ *  يقول «مكسور» على حاجة شغالة.
  */
 const dream = await call('POST', '/goals/dream', { token, body: { title: 'أكون مبرمج محترف' } });
-ok(
-  dream.status === 503 && /GEMINI|AI/.test(dream.body?.code ?? ''),
-  'الحلم بيرفض بوضوح لما الـ AI مش متاح',
-  `HTTP ${dream.status}`,
-);
+
+if (dream.status === 201) {
+  ok(
+    Array.isArray(dream.body?.questions) && dream.body.questions.length > 0,
+    'الحلم رجّع أسئلة (الـ AI متاح)',
+  );
+} else {
+  ok(
+    dream.status === 503 && /GEMINI|AI/.test(dream.body?.code ?? ''),
+    'الحلم بيرفض بوضوح لما الـ AI مش متاح',
+    `HTTP ${dream.status}`,
+  );
+}
 
 const goals = await call('GET', '/goals', { token });
 ok(goals.status === 200 && Array.isArray(goals.body?.goals), 'قائمة الأهداف بترجع');

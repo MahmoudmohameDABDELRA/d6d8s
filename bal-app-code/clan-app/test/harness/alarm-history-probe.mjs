@@ -170,9 +170,14 @@ if (snooze.status === 502) {
     'وبيقترح البديل (المسألة الحسابية)',
   );
 } else {
+  //  مع البديل: لازم جملة فعلية
   ok(
     typeof (snooze.body?.message ?? snooze.body?.text) === 'string',
     'الرد فيه جملة تحفيزية',
+  );
+  ok(
+    (snooze.body?.message ?? snooze.body?.text ?? '').length > 0,
+    'الجملة مش فاضية',
   );
 }
 

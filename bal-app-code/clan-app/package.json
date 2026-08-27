@@ -62,7 +62,9 @@
     "probe:snake": "node test/harness/snake-probe.mjs",
     "probe:alarm": "node test/harness/alarm-history-probe.mjs",
     "probe:profile": "node test/harness/profile-probe.mjs",
+    "probe:dream": "node test/harness/dream-probe.mjs",
     "probe:all": "node test/harness/chat-probe.mjs && node test/harness/alarm-history-probe.mjs && node test/harness/profile-probe.mjs && node test/harness/snake-probe.mjs",
+    "harness:ai": "STUB_GEMINI=1 node --import ./test/harness/setup.mjs test/harness/serve-ai.mjs",
     "harness:break": "node --import ./test/harness/setup.mjs test/harness/serve-break.mjs"
   },
   "prisma": {

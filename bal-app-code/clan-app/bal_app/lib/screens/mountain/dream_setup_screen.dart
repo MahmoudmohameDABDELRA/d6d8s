@@ -6,6 +6,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
 import '../../widgets/buttons.dart';
 import '../../widgets/glass_card.dart';
+import '../../widgets/thinking_view.dart';
 
 /// 🌱 إنشاء الحلم — الكويز + الخطة + الموافقة (مربوط بـ /goals/dream)
 class DreamSetupScreen extends StatefulWidget {
@@ -27,6 +28,18 @@ class _DreamSetupScreenState extends State<DreamSetupScreen> {
   bool _loading = false;
   String? _error;
 
+  /// ️ إيه اللي بنستناه دلوقتي؟
+  ///
+  ///    الشاشة فيها **٣ نداءات AI حقيقية**، كل واحد من ٥ لـ ٢٥
+  ///    ثانية. الدايرة الدوّارة الفاضية كانت بتخلي الانتظار
+  ///    يبان زي التعليق — والمستخدم بيضغط رجوع فيضيع حلمه.
+  ///
+  ///    المراحل بتتغيّر حسب النداء عشان النص يوصف الحقيقة.
+  _Waiting _waiting = _Waiting.none;
+
+  /// إلغاء الانتظار — بيرجّع المستخدم للمرحلة اللي كان فيها
+  bool _cancelled = false;
+
   @override
   void dispose() {
     _dreamCtrl.dispose();
@@ -39,12 +52,17 @@ class _DreamSetupScreenState extends State<DreamSetupScreen> {
     if (title.isEmpty) return;
     setState(() {
       _loading = true;
+      _waiting = _Waiting.questions;
+      _cancelled = false;
       _error = null;
     });
     try {
       final res = await ApiClient.instance.post(ApiEndpoints.dream, body: {
         'title': title,
       });
+      //  المستخدم ألغى وإحنا مستنيين؟ منقفزش على شاشته
+      if (_cancelled || !mounted) return;
+
       final qs = res['questions'] as List? ?? [];
       if (qs.isEmpty) throw Exception(res['message'] ?? 'الـ AI مارجعش أسئلة');
       setState(() {
@@ -66,6 +84,8 @@ class _DreamSetupScreenState extends State<DreamSetupScreen> {
   Future<void> _submitQuiz() async {
     setState(() {
       _loading = true;
+      _waiting = _Waiting.plan;
+      _cancelled = false;
       _error = null;
     });
     try {
@@ -95,6 +115,8 @@ class _DreamSetupScreenState extends State<DreamSetupScreen> {
   Future<void> _approve() async {
     setState(() {
       _loading = true;
+      _waiting = _Waiting.building;
+      _cancelled = false;
       _error = null;
     });
     try {
@@ -123,7 +145,10 @@ class _DreamSetupScreenState extends State<DreamSetupScreen> {
       appBar: AppBar(title: const Text('حلم جديد')),
       body: SafeArea(
         child: _loading
-            ? const Center(child: CircularProgressIndicator())
+            ? ThinkingView(
+                stages: _waiting.stages,
+                onCancel: _cancelWait,
+              )
             : _error != null
                 ? _errorView()
                 : switch (_phase) {
@@ -134,6 +159,17 @@ class _DreamSetupScreenState extends State<DreamSetupScreen> {
                   },
       ),
     );
+  }
+
+  /// ️ الإلغاء بيرجّع الشاشة للمرحلة اللي كان فيها المستخدم،
+  ///    **ومش بيمسح اللي كتبه**. النداء نفسه بيكمّل في السيرفر
+  ///    (مش هنقدر نوقفه) بس الواجهة بتفكّ الحصار.
+  void _cancelWait() {
+    setState(() {
+      _cancelled = true;
+      _loading = false;
+      _waiting = _Waiting.none;
+    });
   }
 
   Widget _errorView() {
@@ -397,4 +433,36 @@ class _OptionTile extends StatelessWidget {
       ),
     );
   }
+}
+
+/// المرحلة اللي بنستناها — كل واحدة ليها نصوصها
+///
+/// ️ النصوص بتوصف خطوات **حقيقية** بيعملها السيرفر بالترتيب،
+///    مش شريط تقدّم مزيّف. المستخدم اللي بيقرا «بحلل إجاباتك»
+///    وهو مستني بعد ما جاوب فعلاً بيصدّق إن فيه شغل بيحصل.
+enum _Waiting {
+  none,
+  questions,
+  plan,
+  building;
+
+  List<String> get stages => switch (this) {
+        _Waiting.questions => const [
+            'بقرا حلمك…',
+            'بفكّر أسألك في إيه',
+            'بجهّز الأسئلة',
+          ],
+        _Waiting.plan => const [
+            'بحلّل إجاباتك…',
+            'بقسّم حلمك لخطوات',
+            'برتّب الخطوات من القاع للقمة',
+            'بحسب مدة كل خطوة',
+          ],
+        _Waiting.building => const [
+            'ببني جبلك…',
+            'بجهّز مهام أول خطوة',
+            'بوزّعها على أيامك',
+          ],
+        _Waiting.none => const ['لحظة…'],
+      };
 }

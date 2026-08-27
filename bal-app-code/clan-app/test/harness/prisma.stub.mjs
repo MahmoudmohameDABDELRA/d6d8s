@@ -34,6 +34,41 @@ try {
     if (line === '}') { current = null; continue; }
     if (!current) continue;
 
+    /**
+     * ️ الحقول الاختيارية (`Type?`) بلا `@default`.
+     *
+     *  في Postgres دي بتبقى `NULL`. الستَب كان بيسيبها **غير
+     *  معرّفة** (`undefined`)، والفرق مش شكلي:
+     *
+     *      where: { completedAt: null }   →  مش بيطابق undefined
+     *
+     *  الأثر اللي اتمسك: `listGoals` بيفلتر بـ`completedAt: null`،
+     *  فالهدف اللي المستخدم وافق عليه لسه **مش ظاهر في القايمة**
+     *  — والفحص قال إن الموافقة مكسورة وهي شغالة تماماً.
+     *
+     *  خدت وقت أطول من اللازم عشان أفرّق: الكود سليم، الأداة هي
+     *  اللي كانت بتكدب.
+     */
+    const optional = line.match(/^(\w+)\s+(\w+)\?(?!\[)/);
+    if (optional && !line.includes('@default')) {
+      /**
+       * ️ التمييز بالحرف الكبير **مش شغّال**: أنواع Prisma
+       *    الأساسية كلها بحرف كبير (`String`, `DateTime`, `Int`).
+       *    الحارس اللي كتبته الأول استبعدهم كلهم كـ«علاقات»
+       *    فالإصلاح ما عملش حاجة، والفلتر فضل مكسور.
+       *
+       *    القايمة الصريحة هي الطريقة الوحيدة الأكيدة.
+       */
+      const SCALARS = new Set([
+        'String', 'Int', 'Float', 'Boolean', 'DateTime', 'Json',
+        'BigInt', 'Decimal', 'Bytes',
+      ]);
+      if (SCALARS.has(optional[2])) {
+        DEFAULTS.get(current)[optional[1]] = null;
+      }
+      continue;
+    }
+
     /** ️ `[^)]*` كان بيقص `now()` عند أول قوس → "now(" .
      *    الصيغة دي بتاخد الاستدعاء كامل. */
     const field = line.match(/^(\w+)\s+(\w+)(\[\])?\??\s+.*@default\((\w+\(\)|[^)]*)\)/);
@@ -370,17 +405,83 @@ const model = (name) => new Proxy({}, {
             }
             if (hit) break;
           }
-          /** نكمّل include المتداخل جوه الصف اللي لقيناه */
-          if (hit && cfg?.include) {
-            hit = { ...hit };
-            for (const sub of Object.keys(cfg.include)) {
-              const subId = hit[`${sub}Id`];
-              hit[sub] = (db.get(sub) ?? []).find((x) => x.id === subId)
-                ?? { id: subId ?? `${sub}-1`, username: 'عضو' };
+          /**
+           * نكمّل include المتداخل جوه الصف اللي لقيناه.
+           *
+           * ️ كان مستوى واحد بس، والكود الحقيقي بيوصل لمستويين:
+           *
+           *     step: { select: { goal: { select: { userId } } } }
+           *     journeys.map(j => j.step.goal.userId)
+           *
+           *   المستوى التاني كان بيرجّع كائن بلا `userId`، فالنداء
+           *   بيرمي `Cannot read properties of undefined`.
+           *   ده كان بيمنع `generateTodayTasks` من الشغل خالص —
+           *   يعني «المهام بتنزل تلقائي» (جوهر المنتج) كان بره
+           *   التغطية.
+           *
+           *   الحل: دالة تكرارية بدل حلقة مستوى واحد.
+           */
+          const enrich = (target, includeCfg, depth = 0) => {
+            if (!target || !includeCfg || depth > 4) return target;
+            const copy = { ...target };
+
+            for (const [sub, subCfg] of Object.entries(includeCfg)) {
+              //  `select: { x: true }` مش include — نتخطاه
+              if (subCfg === true) continue;
+
+              const nested = subCfg?.select ?? subCfg?.include;
+              const subId = copy[`${sub}Id`];
+
+              let found = (db.get(sub) ?? []).find((x) => x.id === subId);
+
+              //  مش لقيناه بالاسم؟ ندوّر بأي مفتاح أجنبي
+              if (!found) {
+                for (const [key, val] of Object.entries(copy)) {
+                  if (!key.endsWith('Id') || typeof val !== 'string') continue;
+                  const cand = (db.get(sub) ?? []).find((x) => x.id === val);
+                  if (cand) { found = cand; break; }
+                }
+              }
+
+              if (!found) {
+                copy[sub] = subId
+                  ? { id: subId, username: 'عضو', title: 'عنصر' }
+                  : null;
+                continue;
+              }
+
+              copy[sub] = nested
+                ? enrich(found, nested, depth + 1)
+                : { ...found };
             }
+            return copy;
+          };
+
+          if (hit && (cfg?.include || cfg?.select)) {
+            hit = enrich(hit, cfg.include ?? cfg.select);
           }
+          /**
+           * ️ العلاقة اللي مش موجودة لازم ترجّع `null`.
+           *
+           *  الستَب كان بيخترع كائن وهمي دايماً. النتيجة إن أي
+           *  فحص «العلاقة دي موجودة ولا لأ» بيرجّع **موجودة**
+           *  على طول:
+           *
+           *      include: { journey: { select: { id: true } } }
+           *      if (step.journey) throw JOURNEY_EXISTS
+           *
+           *  فخطوة اتعملت للتو ومالهاش رحلة كانت بترمي
+           *  «ليها رحلة بالفعل» — والإقلاع التلقائي بعد الموافقة
+           *  على الجبل كان بيفشل **صامت** في كل مرة.
+           *
+           *  الاختراع بيتعمل بس لما يكون فيه مفتاح أجنبي فعلاً
+           *  (يعني العلاقة مفروض تكون موجودة والصف ضايع من
+           *  الستَب) — مش لما المفتاح نفسه فاضي.
+           */
           out[rel] = hit
-            ?? { id: direct ?? `${rel}-1`, username: 'عضو', title: 'عنصر', profileImage: null };
+            ?? (direct
+              ? { id: direct, username: 'عضو', title: 'عنصر', profileImage: null }
+              : null);
         }
         return out;
       };
