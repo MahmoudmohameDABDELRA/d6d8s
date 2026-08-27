@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/network/api_client.dart';
 import '../../core/network/api_error.dart';
 import '../../core/network/api_endpoints.dart';
+import '../../core/alarm/native_alarm.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/models.dart';
@@ -42,6 +43,12 @@ class _AlarmsScreenState extends State<AlarmsScreen> {
   ///    السيرفر بيحسب الاتنين + نسبة النجاح + متوسط سرعة الرد.
   Map<String, dynamic>? _stats;
 
+  /// ️ حالة إعدادات النظام. المنبه بيفشل على أندرويد لأسباب
+  ///    **برّه التطبيق**: المستخدم منع المنبهات الدقيقة، أو
+  ///    شاومي حاطة التطبيق في قائمة القتل. من غير الفحص ده
+  ///    المستخدم بيكتشف المشكلة **لما يفوته الميعاد**.
+  AlarmDiagnostics? _diagnostics;
+
   @override
   void initState() {
     super.initState();
@@ -72,6 +79,15 @@ class _AlarmsScreenState extends State<AlarmsScreen> {
         _loading = false;
         _error = null;
       });
+
+      /// ⏰ الوصلة الحاسمة: نجدول المنبهات في **النظام** نفسه.
+      ///
+      /// ️ من غير السطر ده المنبه موجود في قاعدة البيانات ومش
+      ///    موجود في الجهاز — يعني **مش هيرن**. السيرفر بيحتفظ
+      ///    بالقايمة عشان تتزامن بين الأجهزة، لكن الرنين محلي
+      ///    بـ AlarmManager: مبيحتاجش نت ولا حساب سحابي.
+      await _scheduleNatively();
+      await _checkDiagnostics();
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -79,6 +95,34 @@ class _AlarmsScreenState extends State<AlarmsScreen> {
         _error = humanError(e, fallback: 'مقدرناش نجيب منبهاتك');
       });
     }
+  }
+
+  /// تحويل منبهات السيرفر لجدولة نظام حقيقية
+  Future<void> _scheduleNatively() async {
+    if (!NativeAlarm.isSupported) return;
+
+    final payload = _alarms.map((a) {
+      final parts = a.time.split(':');
+      return <String, dynamic>{
+        'id': a.id,
+        'hour': int.tryParse(parts.first) ?? 0,
+        'minute': parts.length > 1 ? (int.tryParse(parts[1]) ?? 0) : 0,
+        'weekdays': a.days,
+        'label': 'منبه بال',
+        'enabled': a.isActive,
+        'snoozeMinutes': 5,
+        'requireChallenge': a.requireProof,
+      };
+    }).toList();
+
+    await NativeAlarm.sync(payload);
+  }
+
+  /// فحص إعدادات النظام — بيحدد هل المنبه مضمون ولا لأ
+  Future<void> _checkDiagnostics() async {
+    if (!NativeAlarm.isSupported) return;
+    final d = await NativeAlarm.diagnostics();
+    if (mounted) setState(() => _diagnostics = d);
   }
 
   Future<void> _add() async {
@@ -165,6 +209,10 @@ class _AlarmsScreenState extends State<AlarmsScreen> {
                             padding: const EdgeInsets.fromLTRB(
                                 AppTheme.spaceXl, 0, AppTheme.spaceXl, 40),
                             children: [
+                              /// ️ التحذير **فوق كل حاجة** عن قصد.
+                              ///    منبه مش هيرن أهم من أي رقم أو
+                              ///    كارت تاني في الشاشة.
+                              _healthCard(c),
                               if (_hasStreak) _streakCard(c),
                               const SizedBox(height: AppTheme.spaceMd),
                               ..._alarms.map((a) => _alarmCard(c, a)),
@@ -173,6 +221,156 @@ class _AlarmsScreenState extends State<AlarmsScreen> {
                             ],
                           ),
                   ),
+      ),
+    );
+  }
+
+  /// 🩺 كارت صحة المنبه — أهم إضافة في الشاشة دي
+  ///
+  /// ️ ليه موجود:
+  ///
+  ///    المنبه على أندرويد بيفشل لأسباب **مالهاش علاقة بالكود**:
+  ///    المستخدم منع المنبهات الدقيقة، أو الإشعارات مقفولة، أو
+  ///    شاومي حاطة التطبيق في قائمة القتل التلقائي.
+  ///
+  ///    التطبيقات الضعيفة بتسيب المستخدم يكتشف ده **الصبح لما
+  ///    يفوته الميعاد**. التطبيقات المحترمة بتقوله قبل ما ينام.
+  ///
+  ///    كل مشكلة هنا معاها زرار بيودّي لشاشة الإعداد بالظبط —
+  ///    مش «روح للإعدادات ودوّر».
+  Widget _healthCard(BalColors c) {
+    final d = _diagnostics;
+
+    //  مفيش فحص لسه، أو منصة مش مدعومة
+    if (d == null || !NativeAlarm.isSupported) return const SizedBox.shrink();
+
+    final issues = d.issues;
+
+    //  كله تمام — سطر واحد مطمّن، مش كارت كبير
+    if (issues.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: AppTheme.spaceMd),
+        child: Row(
+          children: [
+            Icon(Icons.verified_rounded, size: 18, color: c.primary),
+            const SizedBox(width: AppTheme.spaceSm),
+            Text(
+              'المنبه مضمون — هيرن حتى والتطبيق مقفول',
+              style: TextStyle(
+                fontSize: BalType.caption,
+                color: c.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final hasCritical = issues.any((i) => i.critical);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppTheme.spaceLg),
+      child: Container(
+        padding: const EdgeInsets.all(AppTheme.spaceLg),
+        decoration: BoxDecoration(
+          color: (hasCritical ? c.danger : c.accent).withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+          border: Border.all(
+            color: (hasCritical ? c.danger : c.accent).withValues(alpha: 0.45),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  hasCritical
+                      ? Icons.warning_amber_rounded
+                      : Icons.info_outline_rounded,
+                  color: hasCritical ? c.danger : c.accent,
+                  size: 22,
+                ),
+                const SizedBox(width: AppTheme.spaceSm),
+                Expanded(
+                  child: Text(
+                    hasCritical
+                        ? 'المنبه ممكن ما يرنش'
+                        : 'المنبه شغّال — بس ينفع أحسن',
+                    style: TextStyle(
+                      fontSize: BalType.body,
+                      fontWeight: FontWeight.w700,
+                      color: c.text,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppTheme.spaceMd),
+            ...issues.map((i) => _issueRow(c, i)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _issueRow(BalColors c, AlarmIssue issue) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppTheme.spaceSm),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 3),
+            child: Icon(
+              issue.critical
+                  ? Icons.circle
+                  : Icons.circle_outlined,
+              size: 8,
+              color: issue.critical ? c.danger : c.textSecondary,
+            ),
+          ),
+          const SizedBox(width: AppTheme.spaceSm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  issue.title,
+                  style: TextStyle(
+                    fontSize: BalType.small,
+                    fontWeight: FontWeight.w600,
+                    color: c.text,
+                  ),
+                ),
+                Text(
+                  issue.why,
+                  style: TextStyle(
+                    fontSize: BalType.caption,
+                    color: c.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: () async {
+              await NativeAlarm.openSettingsFor(issue.key);
+              //  المستخدم رجع؟ نعيد الفحص فوراً
+              await _checkDiagnostics();
+            },
+            style: TextButton.styleFrom(
+              minimumSize: const Size(0, 48),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppTheme.spaceSm,
+              ),
+            ),
+            child: Text(
+              issue.action,
+              style: TextStyle(fontSize: BalType.caption, color: c.primary),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -343,12 +541,60 @@ class _AlarmsScreenState extends State<AlarmsScreen> {
 
   /// تجربة مهمة فك النوم من غير ما تستنى المنبه
   Widget _tryWakeTask(BalColors c) {
-    return OutlinePillButton(
-      label: 'جرّب مهمة الصحيان',
-      icon: Icons.play_circle_outline_rounded,
-      onPressed: () => Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const WakeTaskScreen(isPreview: true)),
+    return Column(
+      children: [
+        OutlinePillButton(
+          label: 'جرّب مهمة الصحيان',
+          icon: Icons.play_circle_outline_rounded,
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const WakeTaskScreen(isPreview: true),
+            ),
+          ),
+        ),
+
+        /// 🧪 رنّة تجريبية حقيقية.
+        ///
+        /// ️ الفرق بينها وبين «جرّب المهمة» فوق: دي بترن فعلاً
+        ///    من **النظام**، بالصوت والشاشة الكاملة فوق القفل.
+        ///
+        ///    ليه ده مش رفاهية: المستخدم بيعتمد على المنبه وهو
+        ///    نايم. لازم يقدر يتأكد إنه شغّال **قبل** ما ينام.
+        ///    اكتشاف إنه مش شغّال الصبح = وصلت متأخر — ومفيش
+        ///    اعتذار بيصلّح ده.
+        if (NativeAlarm.isSupported) ...[
+          const SizedBox(height: AppTheme.spaceMd),
+          TextButton.icon(
+            onPressed: _testRing,
+            icon: Icon(Icons.notifications_active_outlined,
+                size: 18, color: c.textSecondary),
+            label: Text(
+              'رنّة تجريبية بعد ١٠ ثواني',
+              style: TextStyle(
+                fontSize: BalType.small,
+                color: c.textSecondary,
+              ),
+            ),
+            style: TextButton.styleFrom(minimumSize: const Size(0, 48)),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Future<void> _testRing() async {
+    final at = await NativeAlarm.testFireIn(10);
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          at == null
+              ? 'مقدرناش نجدول الرنّة — شوف التحذيرات فوق'
+              : 'اقفل التطبيق دلوقتي — هيرن بعد ١٠ ثواني 🔔',
+        ),
+        duration: const Duration(seconds: 6),
       ),
     );
   }

@@ -1,8 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../core/checkin/checkin_watcher.dart';
 import '../core/realtime/realtime_service.dart';
+import '../core/alarm/native_alarm.dart';
+import '../screens/alarm/wake_task_screen.dart';
 import '../widgets/checkin_dialog.dart';
 import '../widgets/challenge_invite_dialog.dart';
 import '../widgets/floating_nav_bar.dart';
@@ -33,6 +36,8 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
 
   late final CheckInWatcher _watcher;
   late final RealtimeService _realtime;
+
+  StreamSubscription<AlarmRinging>? _alarmSub;
 
   /// ⚠️ حارس ضد فتح بوب-أبين فوق بعض: الحلقة بتشتغل كل 30 ثانية،
   ///    ولو مهمتين خلصوا في نفس الوقت الاتنين هيتضافوا للطابور —
@@ -72,6 +77,60 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
 
     // أسئلة اتخزنت في السيرفر والتطبيق كان مقفول
     _watcher.syncPending();
+
+    _wireAlarm();
+  }
+
+  /// ⏰ ربط المنبه الأصلي بالواجهة.
+  ///
+  /// ️ الحلقة اللي كانت ناقصة:
+  ///
+  ///    محرّك المنبه بيرن على مستوى النظام (خدمة أمامية + شاشة
+  ///    فوق القفل) — ده شغّال من غير التطبيق أصلاً. لكن **مهمة
+  ///    الصحيان** في Flutter، فلازم التطبيق يعرف إن المنبه رنّ
+  ///    عشان يفتحها ويسجّل الاستيقاظ.
+  ///
+  ///    من غير الربط ده: المنبه بيرن، المستخدم بيقفله من
+  ///    الشاشة الأصلية، والتطبيق مايعرفش حاجة — فمفيش تسجيل
+  ///    ولا سلسلة ولا مهمة.
+  void _wireAlarm() {
+    if (!NativeAlarm.isSupported) return;
+
+    _alarmSub = NativeAlarm.onRinging.listen((event) {
+      if (!mounted) return;
+      _openWakeTask(event.alarmId);
+    });
+
+    /// ️ المنبه ممكن يكون بيرن **دلوقتي** والتطبيق لسه بيفتح
+    ///    (النظام هو اللي فتحه). الحدث فات علينا، فبنسأل.
+    NativeAlarm.ringingAlarmId().then((id) {
+      if (id != null && mounted) _openWakeTask(id);
+    });
+
+    /// شبكة أمان: نعيد الجدولة عند كل فتح للتطبيق.
+    /// تحديث التطبيق أو تنظيف النظام ممكن يمسح المجدول.
+    NativeAlarm.rescheduleAll();
+  }
+
+  Future<void> _openWakeTask(String alarmId) async {
+    if (_dialogOpen) return;
+    _dialogOpen = true;
+    _watcher.pause();
+
+    final solved = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => WakeTaskScreen(alarmId: alarmId),
+        fullscreenDialog: true,
+      ),
+    );
+
+    /// ️ الصوت بيقف **بعد** الحل بس. ده جوهر الفكرة: لو وقف
+    ///    بمجرد فتح الشاشة، المستخدم يقدر يرجع ينام وهو فاتح
+    ///    الشاشة — والمنبه اتقفل من غير ما يصحى.
+    if (solved == true) await NativeAlarm.dismiss(alarmId);
+
+    _dialogOpen = false;
+    _watcher.resume();
   }
 
   @override
@@ -138,6 +197,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _alarmSub?.cancel();
     _watcher.removeListener(_onWatcherChanged);
     _watcher.stop();
     _realtime.disconnect();

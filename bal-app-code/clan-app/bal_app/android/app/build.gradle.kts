@@ -44,6 +44,22 @@ kotlin {
     }
 }
 
+/**
+ * ️ الاعتماديتين دول مطلوبين لمحرّك المنبه.
+ *
+ *    من غيرهم البناء بيقع بـ "Unresolved reference" على
+ *    `NotificationCompat` و`LocalBroadcastManager`.
+ *
+ *    ️ مفيش Firebase ولا google-services هنا **عن قصد**:
+ *      المنبه بيشتغل بـ AlarmManager محلياً، مش بـ push.
+ *      لو كان بالـ push كان هيحتاج نت — وحد نايم والواي فاي
+ *      فصل كان هيفوته الميعاد.
+ */
+dependencies {
+    implementation("androidx.core:core-ktx:1.13.1")
+    implementation("androidx.localbroadcastmanager:localbroadcastmanager:1.1.0")
+}
+
 flutter {
     source = "../.."
 }

@@ -1,8 +1,66 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- ══════════════════════════════════════════════════════
+         صلاحيات المنبه
+
+         ️ مفيش أي صلاحية إنترنت مطلوبة للرنين.
+            المنبه بيشتغل بـ AlarmManager محلياً — مش بـ push.
+            حد نايم والواي فاي فصل لازم المنبه يرن برضه.
+         ══════════════════════════════════════════════════════ -->
+
+    <!-- الاتصال بالسيرفر (مزامنة المنبهات، مش الرنين) -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!--
+      USE_EXACT_ALARM  (أندرويد 13+ / API 33+)
+      بيتمنح تلقائياً والمستخدم مايقدرش يسحبه.
+      مخصص للتطبيقات اللي المنبه وظيفتها الأساسية — وده حالنا.
+      ️ جوجل بلاي بتراجع الإذن ده. لو اترفض استخدم
+        SCHEDULE_EXACT_ALARM بس.
+    -->
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+
+    <!--
+      SCHEDULE_EXACT_ALARM  (أندرويد 12 و13 بس)
+      maxSdkVersion="32" مهم: من API 33 بنعتمد على USE_EXACT_ALARM.
+      جوجل بتقول صراحةً: ما تطلبش الاتنين على نفس الجهاز.
+    -->
+    <uses-permission
+        android:name="android.permission.SCHEDULE_EXACT_ALARM"
+        android:maxSdkVersion="32" />
+
+    <!-- شاشة كاملة فوق القفل — إجباري صراحةً من API 36 -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+
+    <!-- إشعارات وقت التشغيل — أندرويد 13+ -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- إعادة الجدولة بعد إقلاع الجهاز — النظام بيمسح كل المنبهات -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <!-- إبقاء المعالج صاحي أثناء الرنين -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <!-- خدمة أمامية — عشان النظام مايقتلناش وإحنا بنرن -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission
+        android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+
+    <!-- طلب الاستثناء من تحسين البطارية -->
+    <uses-permission
+        android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+
+    <!-- إيقاظ الشاشة وإظهارها فوق القفل -->
+    <uses-permission android:name="android.permission.TURN_SCREEN_ON" />
+    <uses-permission android:name="android.permission.DISABLE_KEYGUARD" />
+
     <application
-        android:label="bal_app"
+        android:label="بال"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -12,10 +70,6 @@
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize">
-            <!-- Specifies an Android theme to apply to this Activity as soon as
-                 the Android process has started. This theme is visible to the user
-                 while the Flutter UI initializes. After that, this theme continues
-                 to determine the Window background behind the Flutter UI. -->
             <meta-data
               android:name="io.flutter.embedding.android.NormalTheme"
               android:resource="@style/NormalTheme"
@@ -25,17 +79,94 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-        <!-- Don't delete the meta-data below.
-             This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
+
+        <!-- ══════════════════════════════════════════════════
+             مكوّنات المنبه
+             ══════════════════════════════════════════════════ -->
+
+        <!--
+          شاشة المنبه.
+
+          singleInstance    : نسخة واحدة بس — ما تتكدّسش
+          excludeFromRecents: ما تظهرش في التطبيقات الأخيرة
+          showWhenLocked    : تظهر فوق القفل
+          turnScreenOn      : تولّع الشاشة
+          taskAffinity=""   : مهمة منفصلة عن التطبيق
+        -->
+        <activity
+            android:name="com.bal.bal_app.alarm.AlarmActivity"
+            android:exported="false"
+            android:launchMode="singleInstance"
+            android:taskAffinity=""
+            android:excludeFromRecents="true"
+            android:showOnLockScreen="true"
+            android:turnScreenOn="true"
+            android:showWhenLocked="true"
+            android:screenOrientation="portrait"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
+            android:theme="@style/LaunchTheme"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!--
+          خدمة الرنين.
+
+          foregroundServiceType="specialUse" إجباري من أندرويد 14.
+          من غيره: MissingForegroundServiceTypeException وانهيار فوري.
+
+          ️ جوجل بلاي بتسأل عن سبب specialUse عند الرفع.
+            الرد المعتمد مكتوب في الـ property تحت.
+        -->
+        <service
+            android:name="com.bal.bal_app.alarm.AlarmRingService"
+            android:exported="false"
+            android:stopWithTask="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Alarm clock: plays alarm audio and shows a full-screen wake-up challenge at the exact time chosen by the user, including while the device is idle or locked." />
+        </service>
+
+        <!--
+          المستقبِل.
+
+          exported="true" ضروري: نيّات الإقلاع جاية من النظام
+          مش من تطبيقنا.
+          directBootAware="true" بيخليه يشتغل بعد الإقلاع وقبل
+          أول فتح للقفل.
+        -->
+        <receiver
+            android:name="com.bal.bal_app.alarm.AlarmReceiver"
+            android:exported="true"
+            android:directBootAware="true"
+            android:enabled="true">
+            <intent-filter android:priority="1000">
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON" />
+            </intent-filter>
+            <!--
+              ️ من غير الفلتر ده: مسافر من القاهرة للرياض،
+                منبهه بيرن الساعة الغلط.
+            -->
+            <intent-filter>
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.DATE_CHANGED" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="com.bal.bal_app.alarm.ACTION_FIRE" />
+                <action android:name="com.bal.bal_app.alarm.ACTION_DISMISS" />
+                <action android:name="com.bal.bal_app.alarm.ACTION_SNOOZE" />
+            </intent-filter>
+        </receiver>
+
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
     </application>
-    <!-- Required to query activities that can process text, see:
-         https://developer.android.com/training/package-visibility and
-         https://developer.android.com/reference/android/content/Intent#ACTION_PROCESS_TEXT.
 
-         In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin. -->
     <queries>
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+================================================================
+  نصوص شاشة المنبه
+================================================================
+
+  لماذا ملف موارد بدل نصوص داخل Kotlin؟
+
+  PowerShell 5.1 يقرأ ملفات .kt بترميز النظام (ANSI) لا UTF-8،
+  فيتحوّل النص العربي إلى رموز مشوّهة عند النسخ.
+
+  ملفات res/values تحمل ترميزها في السطر الأول، وأدوات أندرويد
+  تقرؤها UTF-8 دائماً مهما فعل السكربت.
+
+  النتيجة: النص العربي لا يمكن أن يتلف.
+================================================================
+-->
+<resources>
+
+    <!-- العنوان الافتراضي للمنبه -->
+    <string name="clan_alarm_default_label">منبه العشيرة</string>
+
+    <!-- تعليمات المسألة -->
+    <string name="clan_alarm_hint">احسب الناتج لإيقاف المنبه</string>
+
+    <!-- علامة الاستفهام في خانة الإجابة -->
+    <string name="clan_alarm_answer_placeholder">؟</string>
+
+    <!-- بعد الحل الصحيح -->
+    <string name="clan_alarm_success">أحسنت</string>
+
+    <!-- عدّاد المسائل: 1 / 3 مسائل -->
+    <string name="clan_alarm_progress">%1$d / %2$d مسائل</string>
+
+    <!-- عدّاد المحاولات الخاطئة -->
+    <string name="clan_alarm_attempts">%1$d محاولة خاطئة</string>
+
+    <!-- يُلحق بالعدّاد بعد ثلاث محاولات -->
+    <string name="clan_alarm_harder">زادت الصعوبة</string>
+
+    <!-- فاصل بين جزأي شريط الحالة -->
+    <string name="clan_alarm_separator">  -  </string>
+
+    <!-- أزرار لوحة الأرقام -->
+    <string name="clan_alarm_key_delete">مسح</string>
+    <string name="clan_alarm_key_ok">تم</string>
+
+    <!-- الإشعار -->
+    <string name="clan_alarm_notification_title">%1$s</string>
+    <string name="clan_alarm_notification_body">اضغط لحل المسألة وإيقاف المنبه</string>
+    <string name="clan_alarm_notification_action">حلّ المسألة</string>
+    <string name="clan_alarm_channel_name">منبه العشيرة</string>
+    <string name="clan_alarm_channel_desc">تنبيهات الاستيقاظ — لا يمكن كتمها</string>
+
+    <!-- منبه الاختبار -->
+    <string name="clan_alarm_test_label">اختبار المنبه</string>
+
+</resources>
