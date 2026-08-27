@@ -8,6 +8,7 @@ import '../../core/theme/app_theme.dart';
 import '../../widgets/buttons.dart';
 import '../../widgets/glass_card.dart';
 import '../../widgets/progress_ring.dart';
+import 'focus_cycle.dart';
 
 /// 🎯 إعداد جلسة التركيز — 3 عدادات + زران (فردي/جماعي)
 /// القاعدة: الراحة 1-10 صارم (السيرفر بيرفض فوق 10)
@@ -172,7 +173,22 @@ class _FocusSetupScreenState extends State<FocusSetupScreen> {
   }
 }
 
-/// ⏱️ جلسة التركيز النشطة — مؤقت تنازلي + زر «أنا هنا»
+/// ⏱️ جلسة التركيز النشطة — مثبّتة على وقت السيرفر
+///
+/// ️ الباج اللي اتصلح هنا:
+///
+///    النسخة القديمة كانت بتعمل `Timer.periodic` وتطرح ثانية كل
+///    ثانية، وخلاص. يعني:
+///      · المستخدم يقفل التطبيق ١٠ دقايق → العدّاد بيقف معاه،
+///        بيرجع يلاقي نفسه في نفس اللحظة والسيرفر شايفه في
+///        الراحة التانية. رقمين مختلفين لنفس الجلسة.
+///      · التطبيق يتقفل خالص → الجلسة «بتضيع» من ناحية الواجهة،
+///        رغم إنها لسه ACTIVE في قاعدة البيانات.
+///
+///    الحل: الوقت بيتحسب من `startedAt` بتاعة السيرفر، مش من
+///    عدّاد محلي. المؤقت بقى بيحرّك الرسمة بس. ولما التطبيق
+///    يرجع من الخلفية بنسأل `/focus/active` تاني عشان نتأكد إن
+///    الجلسة لسه شغالة (يمكن اتلغت من جهاز تاني).
 class FocusSessionScreen extends StatefulWidget {
   final String sessionId;
   final int focusMin;
@@ -191,81 +207,110 @@ class FocusSessionScreen extends StatefulWidget {
   State<FocusSessionScreen> createState() => _FocusSessionScreenState();
 }
 
-class _FocusSessionScreenState extends State<FocusSessionScreen> {
-  late Duration _remaining;
-  Timer? _timer;
+class _FocusSessionScreenState extends State<FocusSessionScreen>
+    with WidgetsBindingObserver {
+  Timer? _ticker;
   bool _completed = false;
-  bool _isRest = false;
+
+  /// نقطة الارتساء: بداية الجلسة بحسب السيرفر.
+  /// لو السيرفر لسه مردّش بنستخدم «دلوقتي» مؤقتاً.
+  DateTime _startedAt = DateTime.now();
+  bool _anchored = false;
+
+  /// فرق ساعة الجهاز عن ساعة السيرفر — ممكن يكون دقايق.
+  Duration _clockSkew = Duration.zero;
+
+  FocusPhaseState get _state => FocusCycle.at(
+        elapsed: DateTime.now().add(_clockSkew).difference(_startedAt),
+        focusMin: widget.focusMin,
+        restMin: widget.restMin,
+        cycles: widget.cycles,
+      );
 
   @override
   void initState() {
     super.initState();
-    _remaining = Duration(minutes: widget.focusMin);
-    _timer = Timer.periodic(const Duration(seconds: 1), (t) {
-      setState(() {
-        _remaining -= const Duration(seconds: 1);
-        if (_remaining <= Duration.zero) {
-          t.cancel();
-          _onPhaseEnd();
-        }
-      });
+    WidgetsBinding.instance.addObserver(this);
+    _sync();
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      setState(() {});
+      if (_state.isDone && !_completed) _complete(auto: true);
     });
   }
 
-  void _onPhaseEnd() {
-    if (_isRest) {
-      // الراحة خلصت → تركيز تاني
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    /// ️ رجع من الخلفية → نعيد الارتساء. من غير كده العدّاد
+    ///    بيفضل على آخر قيمة شافها قبل ما يروح.
+    if (state == AppLifecycleState.resumed) _sync();
+  }
+
+  /// سؤال السيرفر عن الجلسة الجارية.
+  Future<void> _sync() async {
+    try {
+      final sentAt = DateTime.now();
+      final res = await ApiClient.instance.get(ApiEndpoints.focusActive);
+      final session = (res['session'] as Map?)?.cast<String, dynamic>();
+
+      if (!mounted) return;
+
+      /// مفيش جلسة نشطة؟ يبقى اتقفلت من مكان تاني —
+      /// منعرضش عدّاد لجلسة مش موجودة.
+      if (session == null) {
+        if (_anchored && !_completed) {
+          setState(() => _completed = true);
+        }
+        return;
+      }
+
+      final startedRaw = session['startedAt']?.toString();
+      final started = startedRaw == null ? null : DateTime.tryParse(startedRaw);
+      if (started == null) return;
+
+      /// تصحيح فرق الساعة: السيرفر قال «فات elapsedMin دقيقة»،
+      /// فنعرف ساعته دلوقتي، ونقارنها بساعتنا.
+      final elapsedMin = (session['elapsedMin'] as num?)?.toInt();
+      var skew = Duration.zero;
+      if (elapsedMin != null) {
+        final serverNow = started.add(Duration(minutes: elapsedMin));
+        final roundTrip = DateTime.now().difference(sentAt);
+        skew = serverNow.difference(sentAt.toUtc().add(roundTrip ~/ 2));
+        // فرق أكبر من ساعة = غالباً منطقة زمنية مش انحراف — نتجاهله
+        if (skew.abs() > const Duration(hours: 1)) skew = Duration.zero;
+      }
+
       setState(() {
-        _isRest = false;
-        _remaining = Duration(minutes: widget.focusMin);
+        _startedAt = started.toLocal();
+        _clockSkew = skew;
+        _anchored = true;
       });
-      _timer = Timer.periodic(const Duration(seconds: 1), (t) {
-        setState(() {
-          _remaining -= const Duration(seconds: 1);
-          if (_remaining <= Duration.zero) {
-            t.cancel();
-            _onPhaseEnd();
-          }
-        });
-      });
-    } else {
-      // تركيز خلص → راحة (لو مش آخر دورة)
-      setState(() {
-        _isRest = true;
-        _remaining = Duration(minutes: widget.restMin);
-      });
-      _timer = Timer.periodic(const Duration(seconds: 1), (t) {
-        setState(() {
-          _remaining -= const Duration(seconds: 1);
-          if (_remaining <= Duration.zero) {
-            t.cancel();
-            _onPhaseEnd();
-          }
-        });
-      });
+    } catch (_) {
+      /// ️ الشبكة وقعت؟ نكمّل بالعدّاد المحلي بدل ما نوقف الجلسة
+      ///    في وش المستخدم. الأرقام هتترتّب أول ما الاتصال يرجع.
     }
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    _ticker?.cancel();
     super.dispose();
   }
 
-  Future<void> _complete() async {
-    _timer?.cancel();
+  Future<void> _complete({bool auto = false}) async {
+    _ticker?.cancel();
+    if (mounted) setState(() => _completed = true);
     try {
       await ApiClient.instance
           .post(ApiEndpoints.focusComplete(widget.sessionId), body: {
-        'clientReportedMin': widget.focusMin,
+        'clientReportedMin': widget.focusMin * widget.cycles,
       });
-      if (mounted) {
-        setState(() => _completed = true);
-      }
     } catch (e) {
-      if (mounted) {
+      if (mounted && !auto) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(humanError(e, fallback: 'مقدرناش نحفظ الجلسة'))),
+          SnackBar(
+              content: Text(humanError(e, fallback: 'مقدرناش نحفظ الجلسة'))),
         );
       }
     }
@@ -274,6 +319,7 @@ class _FocusSessionScreenState extends State<FocusSessionScreen> {
   @override
   Widget build(BuildContext context) {
     final c = BalColors(context);
+
     if (_completed) {
       return Scaffold(
         body: Center(
@@ -286,7 +332,9 @@ class _FocusSessionScreenState extends State<FocusSessionScreen> {
                 const SizedBox(height: 23),
                 Text('أحسنت! الجلسة خلصت 🎉',
                     style: TextStyle(
-                        fontSize: 27.5, fontWeight: FontWeight.w700, color: c.text)),
+                        fontSize: 27.5,
+                        fontWeight: FontWeight.w700,
+                        color: c.text)),
                 const SizedBox(height: 9),
                 Text('${widget.focusMin * widget.cycles} دقيقة تركيز حقيقي',
                     style: TextStyle(color: c.textSecondary)),
@@ -303,28 +351,30 @@ class _FocusSessionScreenState extends State<FocusSessionScreen> {
       );
     }
 
-    final secs = _remaining.inSeconds;
+    final st = _state;
+    final secs = st.remaining.inSeconds;
     final mm = (secs ~/ 60).toString().padLeft(2, '0');
     final ss = (secs % 60).toString().padLeft(2, '0');
-    final progress = _remaining.inSeconds /
-        (Duration(minutes: _isRest ? widget.restMin : widget.focusMin).inSeconds);
 
     return Scaffold(
       body: SafeArea(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(_isRest ? 'راحة 🧘' : 'جلسة تركيز',
+            Text(
+                st.isRest
+                    ? 'راحة 🧘'
+                    : 'جلسة تركيز · دورة ${st.cycleNumber} من ${widget.cycles}',
                 style: TextStyle(
                     fontSize: 18.5,
                     fontWeight: FontWeight.w600,
                     color: c.textSecondary)),
             const SizedBox(height: 27.5),
             ProgressRing(
-              progress: progress,
+              progress: st.progress,
               size: 276,
               strokeWidth: 14,
-              color: _isRest ? c.accent : c.primary,
+              color: st.isRest ? c.accent : c.primary,
               center: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -335,20 +385,27 @@ class _FocusSessionScreenState extends State<FocusSessionScreen> {
                           color: c.text,
                           fontFeatures: const [FontFeature.tabularFigures()])),
                   const SizedBox(height: 4.5),
-                  Text(_isRest ? 'راحة' : 'دقيقة تركيز',
+                  Text(st.isRest ? 'راحة' : 'دقيقة تركيز',
                       style: TextStyle(color: c.textSecondary, fontSize: 15)),
                 ],
               ),
             ),
-            const SizedBox(height: 41.5),
-            if (!_isRest)
+            const SizedBox(height: 14),
+            //  الوقت الكلي الفاضل — عشان المستخدم يعرف هو فين من الرحلة
+            Text(
+              'باقي ${st.totalRemaining.inMinutes} دقيقة على خلاص الجلسة',
+              style: TextStyle(color: c.textDisabled, fontSize: 13),
+            ),
+            const SizedBox(height: 27.5),
+            if (!st.isRest)
               PillButton(
                 label: 'أنا هنا 👋',
                 icon: Icons.touch_app_rounded,
                 height: 66.5,
                 onPressed: () {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('تمام يا بطل — كمّل تركيزك 💪')),
+                    const SnackBar(
+                        content: Text('تمام يا بطل — كمّل تركيزك 💪')),
                   );
                 },
               )
@@ -356,16 +413,19 @@ class _FocusSessionScreenState extends State<FocusSessionScreen> {
               OutlinePillButton(
                 label: 'تخطي الراحة',
                 onPressed: () {
-                  _timer?.cancel();
-                  _remaining = Duration.zero;
-                  _onPhaseEnd();
+                  /// ️ تخطي الراحة = بنقدّم نقطة البداية للورا،
+                  ///    مش بنصفّر عدّاد. كده الحساب يفضل متطابق
+                  ///    مع السيرفر في الدورات اللي بعدها.
+                  setState(() {
+                    _startedAt = _startedAt.subtract(st.remaining);
+                  });
                 },
               ),
             const SizedBox(height: 23),
             TextButton(
               onPressed: _complete,
-              child: Text('إنهاء الجلسة',
-                  style: TextStyle(color: c.textDisabled)),
+              child:
+                  Text('إنهاء الجلسة', style: TextStyle(color: c.textDisabled)),
             ),
           ],
         ),

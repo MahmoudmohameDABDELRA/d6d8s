@@ -43,6 +43,23 @@ abstract final class TokenStore {
     return prefs.getBool(_kMode) ?? true; // الافتراضي: داكن
   }
 
+  // ── مفاتيح عامة (توكن الإشعارات وغيره) ──
+
+  static Future<String?> getString(String key) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(key);
+  }
+
+  static Future<void> setString(String key, String value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(key, value);
+  }
+
+  static Future<void> remove(String key) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(key);
+  }
+
   static Future<void> clear() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_kToken);

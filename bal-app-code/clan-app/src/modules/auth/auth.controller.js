@@ -13,6 +13,21 @@ import {
 } from '../../services/google.service.js';
 import asyncHandler from '../../utils/asyncHandler.js';
 import { badRequest, conflict, unauthorized } from '../../utils/AppError.js';
+import { resolveTimezone } from '../../utils/timezone.js';
+
+/**
+ * المنطقة الزمنية اللي هتتحفظ للمستخدم.
+ *
+ * ️ لا تستبدلها بـ `timezone` الخام من الطلب. التطبيق مش دايماً
+ *    بيعرف يجيب اسم IANA (Dart بيرجّع اختصار زي `EET` أو اسم
+ *    ويندوز زي `India Standard Time`)، والأسماء دي بترمي
+ *    RangeError جوه `Intl` في أول حساب ليوم محلي.
+ *    resolveTimezone بيقبل الاسم لو صح، وإلا بيستنتج من الأوفست.
+ */
+const timezoneFrom = (body) => {
+  const { timezone, source } = resolveTimezone(body ?? {});
+  return source === 'default' ? null : timezone;
+};
 
 const REFRESH_COOKIE = 'refreshToken';
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -94,7 +109,8 @@ const uniqueUsername = async (base) => {
  * المجال يُسأل عنه في شاشة منفصلة لأن جوجل لا يوفّره.
  */
 export const googleAuth = asyncHandler(async (req, res) => {
-  const { idToken, timezone } = req.body ?? {};
+  const { idToken } = req.body ?? {};
+  const timezone = timezoneFrom(req.body);
 
   const profile = await verifyGoogleToken(idToken);
 
@@ -206,6 +222,16 @@ export const completeOnboarding = asyncHandler(async (req, res) => {
     onboarded: true,
   };
 
+  /**
+   * ️ المنطقة الزمنية بتتحدّث هنا كمان، مش في التسجيل بس.
+   *    الدخول بجوجل بيحصل قبل ما التطبيق يعرف يقرا الأوفست في
+   *    بعض الحالات، والأونبوردنج هو أول نقطة مضمون فيها إن
+   *    التطبيق شغّال بالكامل. من غير السطر ده، المستخدم اللي
+   *    دخل بجوجل بيفضل على القاهرة للأبد.
+   */
+  const tz = timezoneFrom(req.body);
+  if (tz) data.timezone = tz;
+
   // تغيير اسم المستخدم اختياري في هذه الخطوة
   if (username) {
     const trimmed = String(username).trim();
@@ -277,8 +303,8 @@ export const completeOnboarding = asyncHandler(async (req, res) => {
  * لا تحذفه — هو خطة الطوارئ لو تعطّل Google OAuth.
  */
 export const register = asyncHandler(async (req, res) => {
-  const { username, email, password, domain, specialty, timezone } =
-    req.body ?? {};
+  const { username, email, password, domain, specialty } = req.body ?? {};
+  const timezone = timezoneFrom(req.body);
 
   //  كل عمليات التحقق تتم قبل أي كتابة في قاعدة البيانات
   if (!username || !email || !password) {

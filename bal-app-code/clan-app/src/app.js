@@ -15,6 +15,7 @@ const __dirname = path.dirname(__filename);
 import prisma from './config/prisma.js';
 import redisClient from './config/redis.js';
 import * as userCache from './services/userCache.service.js';
+import * as pushDispatcher from './services/pushDispatcher.service.js';
 import logger from './config/logger.js';
 import { metricsMiddleware, registry } from './config/metrics.js';
 import { requestLogger } from './middlewares/logging.middleware.js';
@@ -138,6 +139,17 @@ app.get('/health', async (req, res) => {
   checks.postgres = pg.status === 'fulfilled' ? 'up' : 'down';
   checks.redis = redis.status === 'fulfilled' ? 'up' : 'down';
 
+  /**
+   * ️ إشعارات الـ push: قبل كده كانت بتفشل **بصمت** — الديسباتشر
+   *    كان بيرجّع `success: true` وهو مش باعت حاجة، وقاعدة البيانات
+   *    كانت بتسجّل `pushSent: true`. يعني المنبه مبيرنش والتطبيق
+   *    مقفول، ومفيش أي مؤشر إن حاجة غلط.
+   *
+   *    دلوقتي بتبان هنا. مش بتنزّل الحالة لـ 503 (باقي التطبيق شغال
+   *    من غيرها) لكنها `degraded` — علامة تظهر في المراقبة.
+   */
+  checks.push = pushDispatcher.isPushConfigured() ? 'up' : 'not_configured';
+
   // Postgres شرط الحياة — بدونه لا مصادقة ولا شيء
   const healthy = checks.postgres === 'up';
 
@@ -145,7 +157,7 @@ app.get('/health', async (req, res) => {
     status: healthy ? 'ok' : 'unhealthy',
     checks,
     /** ️ تدهور جزئي: يعمل لكن ناقص — مفيد للتنبيه لا للسحب */
-    degraded: checks.redis === 'down',
+    degraded: checks.redis === 'down' || checks.push === 'not_configured',
     cache: userCache.stats,
     uptime: process.uptime(),
     latencyMs: Date.now() - t0,

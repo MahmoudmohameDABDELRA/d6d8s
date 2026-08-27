@@ -104,13 +104,40 @@ export const dispatchToSingleDevice = async (device, payload) => {
     },
   };
 
-  // إذا لم يكن هناك اعتماد سحابي (وضع التطوير / الاختبار)، ننفذ إرسالاً صامتاً مع تسجيل الحدث
+  /**
+   * ️ مفيش اعتماد سحابي (FIREBASE_SERVICE_ACCOUNT مش متظبط).
+   *
+   *  الباج اللي اتصلح هنا — وكان أخطر من إنه إشعار مش شايل:
+   *
+   *  النسخة القديمة كانت بترجّع `success: true` في الحالة دي.
+   *  النتيجة إن `dispatchToUserDevices` كان بيعدّها «اتبعتت»،
+   *  و`dispatchToFCM` كان بيكتب `pushSent: true` في قاعدة
+   *  البيانات. يعني السيستم كان **بيكذب على نفسه**: سجلّ
+   *  بيقول إن الإشعار وصل، ومحصلش أي حاجة. ومفيش أي إنذار
+   *  إن الإشعارات مقفولة أصلاً — أسوأ نوع من الأعطال، اللي
+   *  بيبان تمام وهو مش شغال.
+   *
+   *  دلوقتي `success: false` صريح مع سبب واضح، فالسجل بيفضل
+   *  `pushSent: false` والمشكلة بتبان في `/health`.
+   */
   if (!auth) {
-    log.info(
-      { platform, fcmToken: `${fcmToken.slice(0, 10)}...`, channel: channel.channelId, title },
-      ' [FCM MOCK DISPATCH] تم إرسال الإشعار بنجاح في بيئة التطوير',
+    log.warn(
+      {
+        platform,
+        fcmToken: `${fcmToken.slice(0, 10)}...`,
+        channel: channel.channelId,
+        title,
+      },
+      '🔕 الإشعار **ما اتبعتش** — FIREBASE_SERVICE_ACCOUNT مش متظبط. ' +
+        'المنبه والتذكيرات مش هيرنّوا والتطبيق مقفول.',
     );
-    return { success: true, mocked: true, token: fcmToken };
+    return {
+      success: false,
+      delivered: false,
+      mocked: true,
+      reason: 'PUSH_NOT_CONFIGURED',
+      token: fcmToken,
+    };
   }
 
   try {
@@ -162,24 +189,53 @@ export const dispatchToUserDevices = async (userId, payload) => {
   });
 
   if (devices.length === 0) {
-    log.info({ userId }, 'لا توجد أجهزة مسجلة للمستخدم');
-    return { sent: 0, totalDevices: 0 };
+    /**
+     * ️ مفيش أجهزة = المستخدم عمره ما سجّل توكن.
+     *    ده مش «مفيش حاجة تتعمل» — ده معناه إن كل إشعارات
+     *    المستخدم ده ضايعة. بنرجّع السبب صريح عشان اللي فوق
+     *    يعرف يفرّق بين «اتبعت وفشل» و«محدش مسجّل أصلاً».
+     */
+    log.warn({ userId }, '🔕 مفيش أجهزة مسجّلة — الإشعار مالوش مكان يروحه');
+    return {
+      sent: 0,
+      totalDevices: 0,
+      reason: 'NO_DEVICES',
+      configured: isPushConfigured(),
+    };
   }
 
   const results = await Promise.allSettled(
     devices.map((device) => dispatchToSingleDevice(device, payload)),
   );
 
-  const successfulCount = results.filter((r) => r.status === 'fulfilled' && r.value.success).length;
+  const values = results
+    .filter((r) => r.status === 'fulfilled')
+    .map((r) => r.value);
+
+  const sent = values.filter((v) => v?.success).length;
+  const notConfigured = values.filter(
+    (v) => v?.reason === 'PUSH_NOT_CONFIGURED',
+  ).length;
 
   return {
-    sent: successfulCount,
+    sent,
     totalDevices: devices.length,
+    /** اتبلّعت من غير ما تتبعت لأن الإعداد ناقص */
+    suppressed: notConfigured,
+    reason: sent === 0 && notConfigured > 0 ? 'PUSH_NOT_CONFIGURED' : undefined,
+    configured: isPushConfigured(),
   };
 };
+
+/**
+ * هل الـ push متظبط فعلاً؟
+ * بيستخدمها `/health` عشان المشكلة تبان بدل ما تفضل صامتة.
+ */
+export const isPushConfigured = () => getGoogleAuth() !== null;
 
 export default {
   dispatchToSingleDevice,
   dispatchToUserDevices,
+  isPushConfigured,
   NOTIFICATION_CHANNELS,
 };

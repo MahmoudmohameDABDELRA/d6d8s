@@ -120,6 +120,11 @@ abstract final class ApiEndpoints {
 
   // ── الإشعارات والبوب-أب ──
   static const notifications = '/notifications';
+  /// تسجيل جهاز عشان الإشعارات توصل والتطبيق مقفول
+  static const notificationDevice = '/notifications/device';
+  static String notificationDeviceDelete(String fcmToken) =>
+      '/notifications/device/$fcmToken';
+  static const notificationsReadAll = '/notifications/read-all';
   static String notificationReply(String id) => '/notifications/$id/reply';
   static String notificationThread(String id) => '/notifications/$id/thread';
   static String notificationRead(String id) => '/notifications/$id/read';

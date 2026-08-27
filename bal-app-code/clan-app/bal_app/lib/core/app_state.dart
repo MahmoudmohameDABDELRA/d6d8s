@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/models.dart';
+import 'device_timezone.dart';
+import 'push/push_registration.dart';
 import 'network/api_client.dart';
 import 'network/api_endpoints.dart';
 import 'storage/token_store.dart';
@@ -90,6 +92,9 @@ class AppState extends ChangeNotifier {
         'password': password,
         'domain': domain,
         // specialty اختياري في الباك — متبعتناش (مش مطلوبة للتسجيل)
+        //  المنطقة الزمنية: من غيرها كل المستخدمين بيتحطوا على
+        //   القاهرة، فمنتصف الليل وسؤال الاطمئنان بييجوا في وقت غلط.
+        ...DeviceTimezone.payload(),
       });
       final token = res['accessToken'] as String?;
       final u = res['user'];
@@ -136,6 +141,8 @@ class AppState extends ChangeNotifier {
       final res = await ApiClient.instance.post(ApiEndpoints.onboarding, body: {
         'domain': domain,
         'interests': [domain],
+        //  تحديث تاني للمنطقة — الدخول بجوجل ممكن يكون فات الأولى
+        ...DeviceTimezone.payload(),
       });
       final u = res['user'] ?? res;
       if (u is Map<String, dynamic>) {
@@ -153,8 +160,12 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  void logout() {
-    TokenStore.clear();
+  Future<void> logout() async {
+    /// ️ إلغاء تسجيل الجهاز **قبل** مسح التوكن — النداء محتاج
+    ///    التوثيق. من غير كده إشعارات المستخدم ده بتفضل رايحة
+    ///    لنفس الجهاز بعد ما حد تاني يسجّل دخول عليه.
+    await PushRegistration.unregister();
+    await TokenStore.clear();
     user = null;
     notifyListeners();
   }

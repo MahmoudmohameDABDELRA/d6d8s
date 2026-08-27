@@ -8,6 +8,7 @@ import * as streakService from '../../services/streak.service.js';
 import * as analyticsService from '../../services/analytics.service.js';
 import asyncHandler from '../../utils/asyncHandler.js';
 import { badRequest, conflict, notFound } from '../../utils/AppError.js';
+import { phaseAt } from '../../utils/focusCycle.js';
 
 /**
  * ════════════════════════════════════════════════════════════
@@ -435,24 +436,38 @@ export const getActiveSession = asyncHandler(async (req, res) => {
 
   const elapsed = elapsedMinutes(session.startedAt);
 
-  // ═══ الطور الحالي للدورة المخصصة (تركيز / راحة) — رؤية «بال» ═══
-  let phase = null;
-  if (session.cycles && session.restMin && session.totalFocusMin) {
-    const fMin = Math.round(session.totalFocusMin / session.cycles);
-    const rMin = session.restMin;
-    const cycleLen = fMin + rMin;
-    const totalNoFinalRest = session.cycles * cycleLen - rMin; // آخر دورة بلا راحة = لوبي
-    const pos = elapsed % totalNoFinalRest;
-    const cycleIdx = Math.min(Math.floor(pos / cycleLen), session.cycles - 1);
-    const inCycle = pos - cycleIdx * cycleLen;
-    const isLastCycle = cycleIdx === session.cycles - 1;
+  /**
+   * ═══ الطور الحالي للدورة المخصصة (تركيز / راحة) ═══
+   *
+   * ️ الحساب اتنقل لـ utils/focusCycle.js عن قصد. سببين:
+   *
+   *   ١) النسخة القديمة كانت بتعمل `elapsed % totalNoFinalRest` —
+   *      يعني بعد ما الجلسة تخلص كانت **بتلفّ من الأول** وتقول
+   *      «تركيز، دورة 1» للأبد. دلوقتي فيه طور `DONE` صريح.
+   *
+   *   ٢) التطبيق محتاج نفس الحساب بالظبط عشان يكمّل من مكانه
+   *      لما يترجع بعد ما يتقفل. مصدرين للحساب = رقمين مختلفين.
+   */
+  const raw =
+    session.cycles && session.restMin && session.totalFocusMin
+      ? phaseAt({
+          elapsedSec: Math.round(
+            (Date.now() - new Date(session.startedAt).getTime()) / 1000,
+          ),
+          focusMin: Math.round(session.totalFocusMin / session.cycles),
+          restMin: session.restMin,
+          cycles: session.cycles,
+        })
+      : null;
 
-    if (isLastCycle || inCycle < fMin) {
-      phase = { name: 'FOCUS', cycle: cycleIdx + 1, remainingMin: fMin - inCycle };
-    } else {
-      phase = { name: 'REST', cycle: cycleIdx + 1, remainingMin: cycleLen - inCycle };
-    }
-  }
+  const phase = raw
+    ? {
+        name: raw.name,
+        cycle: raw.cycleNumber,
+        remainingMin: Math.ceil(raw.remainingSec / 60),
+        remainingSec: raw.remainingSec,
+      }
+    : null;
 
   res.json({
     success: true,
@@ -480,6 +495,8 @@ export const getActiveSession = asyncHandler(async (req, res) => {
             phase: phase?.name ?? 'FOCUS',
             cycleNumber: phase?.cycle ?? 1,
             phaseRemainingMin: phase?.remainingMin ?? null,
+            /** بالثواني — التطبيق بيرسم عدّاد، والدقيقة مش دقيقة */
+            phaseRemainingSec: phase?.remainingSec ?? null,
           }
         : null,
     },

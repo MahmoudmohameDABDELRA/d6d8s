@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/app_state.dart';
@@ -89,7 +90,11 @@ class ProfileScreen extends StatelessWidget {
             OutlinePillButton(
               label: 'تسجيل الخروج',
               icon: Icons.logout_rounded,
-              onPressed: () => context.read<AppState>().logout(),
+              /// ️ `unawaited` مقصود: الخروج بقى async (بيلغي تسجيل
+              ///    الجهاز في السيرفر الأول)، بس المستخدم مش المفروض
+              ///    يستنى الشبكة عشان يخرج. الحالة بتتصفّى محلياً على
+              ///    طول والنداء بيكمّل في الخلفية.
+              onPressed: () => unawaited(context.read<AppState>().logout()),
             ),
           ],
         ),
