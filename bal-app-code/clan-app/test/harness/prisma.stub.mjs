@@ -189,10 +189,38 @@ const model = (name) => new Proxy({}, {
             continue;
           }
 
-          /** علاقة مفردة: الصف الحقيقي بالمفتاح الأجنبي لو موجود */
-          const fkId = row[`${rel}Id`];
-          out[rel] = (db.get(rel) ?? []).find((x) => x.id === fkId)
-            ?? { id: fkId ?? `${rel}-1`, username: 'عضو', title: 'عنصر', profileImage: null };
+          /**
+           * علاقة مفردة: الصف الحقيقي بالمفتاح الأجنبي.
+           *
+           * ️ الاسم مش دايماً `<rel>Id` — `journey.step` بيستخدم
+           *    `goalStepId`. بنجرّب الاسم المباشر، وبعدين أي مفتاح
+           *    ينتهي بـ Id وقيمته موجودة في جدول محتمل.
+           */
+          const direct = row[`${rel}Id`];
+          const tables = [rel, RELATION_TABLE[rel + 's'], `${rel}Step`, 'goalStep'].filter(Boolean);
+          let hit = null;
+          for (const t of tables) {
+            const rowsT = db.get(t) ?? [];
+            hit = rowsT.find((x) => x.id === direct);
+            if (hit) break;
+            for (const [key, val] of Object.entries(row)) {
+              if (!key.endsWith('Id') || typeof val !== 'string') continue;
+              const cand = rowsT.find((x) => x.id === val);
+              if (cand) { hit = cand; break; }
+            }
+            if (hit) break;
+          }
+          /** نكمّل include المتداخل جوه الصف اللي لقيناه */
+          if (hit && cfg?.include) {
+            hit = { ...hit };
+            for (const sub of Object.keys(cfg.include)) {
+              const subId = hit[`${sub}Id`];
+              hit[sub] = (db.get(sub) ?? []).find((x) => x.id === subId)
+                ?? { id: subId ?? `${sub}-1`, username: 'عضو' };
+            }
+          }
+          out[rel] = hit
+            ?? { id: direct ?? `${rel}-1`, username: 'عضو', title: 'عنصر', profileImage: null };
         }
         return out;
       };
