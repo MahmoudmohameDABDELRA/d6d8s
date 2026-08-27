@@ -206,6 +206,24 @@ class BalTask {
       );
 
   bool get fromMountain => source == 'JOURNEY';
+
+  /// نسخة معدّلة — للتحديث المتفائل قبل ما رد السيرفر يوصل
+  ///
+  /// ️ من غيرها الشاشة لازم تستنى الشبكة عشان ترسم العلامة،
+  ///    والضغطة بتحس إنها ضاعت فالمستخدم بيضغط تاني.
+  BalTask copyWith({bool? isCompleted, String? title}) => BalTask(
+        id: id,
+        title: title ?? this.title,
+        description: description,
+        source: source,
+        isCompleted: isCompleted ?? this.isCompleted,
+        dueDate: dueDate,
+        journeyDayId: journeyDayId,
+        goalStepId: goalStepId,
+        startTime: startTime,
+        endTime: endTime,
+        routineType: routineType,
+      );
 }
 
 /// 🛡️ العشيرة — مجموعة بتجمع ناس ليهم نفس الاهتمام

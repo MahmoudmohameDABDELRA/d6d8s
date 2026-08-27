@@ -73,6 +73,9 @@ abstract final class ApiEndpoints {
   static const tasks = '/tasks';
   static String task(String id) => '/tasks/$id';
   static String completeTask(String id) => '/tasks/$id/complete';
+  /// التراجع عن الإنجاز — بدون ده الضغطة الغلط مالهاش رجعة
+  static String reopenTask(String id) => '/tasks/$id/reopen';
+  static String deleteTask(String id) => '/tasks/$id';
   static const batchBlocks = '/tasks/batch-blocks';
 
   // ── التركيز ──
@@ -141,6 +144,13 @@ abstract final class ApiEndpoints {
   static String notificationThread(String id) => '/notifications/$id/thread';
   static String notificationRead(String id) => '/notifications/$id/read';
   static const checkinOpen = '/notifications/checkin/open';
+
+  // ── الإنجازات والإحصائيات ──
+  static const meStats = '/auth/me/stats';
+  static const achievements = '/achievements';
+  static const achievementsShowcase = '/achievements/showcase';
+  static const analyticsDashboard = '/analytics/dashboard';
+  static const analyticsPeakHours = '/analytics/peak-hours';
 
   // ── الألعاب (وقت الراحة) ──
   static const games = '/games';

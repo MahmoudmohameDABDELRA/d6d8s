@@ -61,29 +61,96 @@ class _TasksScreenState extends State<TasksScreen> {
   }
 
   /// إتمام المهمة → السلسلة الكاملة (Task → JourneyDay → ...)
+  ///
+  /// ️ التحديث **متفائل**: العلامة بتترسم فوراً والنداء بيروح
+  ///    ورا. الدرس من كل تطبيق مهام محترم — الضغطة اللي بتستنى
+  ///    الشبكة بتحس إنها ضاعت، فالمستخدم بيضغط تاني.
+  ///
+  ///    لو النداء فشل بنرجّع الحالة ونقول ليه.
   Future<void> _complete(BalTask task) async {
+    //  ارسم الإنجاز دلوقتي
+    setState(() {
+      _tasks = _tasks
+          .map((t) => t.id == task.id ? t.copyWith(isCompleted: true) : t)
+          .toList();
+    });
+
     try {
       final res = await ApiClient.instance
           .patch(ApiEndpoints.completeTask(task.id));
-      if (mounted) {
-        final mountain = res['mountain'];
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              mountain != null && (mountain['summit'] == true)
-                  ? '🏁 وصلت القمة — حققت هدفك!'
-                  : 'أحسنت! مهمة منجزة',
-            ),
+      if (!mounted) return;
+
+      final mountain = res['mountain'];
+      final summit = mountain != null && mountain['summit'] == true;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            summit ? '🏁 وصلت القمة — حققت هدفك!' : 'أحسنت! مهمة منجزة',
           ),
-        );
-      }
+
+          /// ️ **التراجع.**
+          ///
+          ///    `/tasks/:id/reopen` كان موجود في السيرفر ومفيش
+          ///    أي طريقة توصله من التطبيق. يعني الضغطة الغلط
+          ///    مالهاش رجعة — والمهام في قوايم كده بتتضغط غلط
+          ///    كتير.
+          ///
+          ///    الدرس من Gmail وTodoist: التراجع في نفس الرسالة
+          ///    اللي بتأكّد الفعل. مافيش حوار «متأكد؟» قبل — ده
+          ///    بيبطّئ الحالة الصح (٩٩٪) عشان الغلط (١٪).
+          ///    بنسمح بالفعل بسرعة ونخلي الرجوع سهل.
+          ///
+          ///    ️ مفيش تراجع بعد القمة: ده حدث في الجبل مش مجرد
+          ///      شطب، والرجوع فيه بيبوّظ حاجات تانية.
+          action: summit
+              ? null
+              : SnackBarAction(
+                  label: 'تراجع',
+                  onPressed: () => _reopen(task),
+                ),
+          duration: const Duration(seconds: 5),
+        ),
+      );
+
       await _load();
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('فشل الإنجاز: ${humanError(e)}')),
-        );
-      }
+      if (!mounted) return;
+
+      //  رجّع الحالة — الإنجاز ما حصلش
+      setState(() {
+        _tasks = _tasks
+            .map((t) => t.id == task.id ? t.copyWith(isCompleted: false) : t)
+            .toList();
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(humanError(e, fallback: 'مقدرناش نسجّل'))),
+      );
+    }
+  }
+
+  /// التراجع عن الإنجاز
+  Future<void> _reopen(BalTask task) async {
+    setState(() {
+      _tasks = _tasks
+          .map((t) => t.id == task.id ? t.copyWith(isCompleted: false) : t)
+          .toList();
+    });
+
+    try {
+      await ApiClient.instance.patch(ApiEndpoints.reopenTask(task.id));
+      await _load();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _tasks = _tasks
+            .map((t) => t.id == task.id ? t.copyWith(isCompleted: true) : t)
+            .toList();
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(humanError(e, fallback: 'التراجع مانفعش'))),
+      );
     }
   }
 
