@@ -44,12 +44,27 @@ class CheckInWatcher extends ChangeNotifier {
   /// طابور الأسئلة المستنية عرض (البوب-أب بيعرض واحد في المرة)
   final List<CheckInPrompt> _queue = [];
 
+  /// ️ دعوات تحدي التركيز — طابور منفصل عن الاطمئنان عن قصد.
+  ///    الاتنين نوعين مختلفين من المقاطعة: الاطمئنان سؤال عن الماضي،
+  ///    والدعوة قرار عن الحاضر ولها صلاحية. خلطهم في طابور واحد كان
+  ///    هيخلي دعوة تستنى ورا سؤال المستخدم مأجّله.
+  final List<ChallengeInvite> _invites = [];
+
   bool _paused = false;
 
   /// السؤال اللي المفروض يتعرض دلوقتي — أو null
   CheckInPrompt? get current => _queue.isEmpty ? null : _queue.first;
 
   bool get hasPending => _queue.isNotEmpty;
+
+  /// أول دعوة تحدي مستنية — أو null
+  ChallengeInvite? get currentInvite =>
+      _invites.isEmpty ? null : _invites.first;
+
+  void dismissInvite() {
+    if (_invites.isNotEmpty) _invites.removeAt(0);
+    notifyListeners();
+  }
 
   /// يبدأ المراقبة
   void start() {
@@ -170,8 +185,30 @@ class CheckInWatcher extends ChangeNotifier {
       final list = res['notifications'] as List? ?? const [];
       var added = false;
 
+      /// ️ الدعوات المعروفة — ما نعرضش نفس الدعوة مرتين
+      final knownInvites = _invites.map((i) => i.notificationId).toSet();
+
       for (final raw in list) {
         if (raw is! Map<String, dynamic>) continue;
+
+        // ═══ دعوة تحدي تركيز ═══
+        final data0 = raw['data'];
+        if (data0 is Map && data0['action'] == 'FOCUS_CHALLENGE') {
+          final nid = raw['id']?.toString();
+          final cid = data0['challengeId']?.toString();
+          if (nid == null || cid == null) continue;
+          if (knownInvites.contains(nid)) continue;
+
+          _invites.add(ChallengeInvite(
+            notificationId: nid,
+            challengeId: cid,
+            title: (raw['title'] ?? 'تحدي تركيز').toString(),
+            body: (raw['body'] ?? '').toString(),
+          ));
+          added = true;
+          continue;
+        }
+
         if (raw['type'] != 'TASK_CHECKIN') continue;
 
         final data = raw['data'];
@@ -220,6 +257,21 @@ class CheckInWatcher extends ChangeNotifier {
     _timer?.cancel();
     super.dispose();
   }
+}
+
+/// دعوة لتحدي تركيز جماعي
+class ChallengeInvite {
+  final String notificationId;
+  final String challengeId;
+  final String title;
+  final String body;
+
+  const ChallengeInvite({
+    required this.notificationId,
+    required this.challengeId,
+    required this.title,
+    required this.body,
+  });
 }
 
 /// سؤال اطمئنان جاهز للعرض

@@ -428,3 +428,71 @@ class BalAlarm {
     return sorted.map((d) => dayNames[d % 7]).join(' · ');
   }
 }
+
+/// 🎯 تحدي تركيز جماعي — تذاكر مع ناس من عشيرتك في نفس الوقت
+class FocusChallenge {
+  final String id;
+  final String title;
+  final String? hostId;
+  final String? hostName;
+  final int focusMin;
+  final int restMin;
+  final int cycles;
+
+  /// WAITING = مستني الناس · ACTIVE = شغّال · FINISHED · CANCELLED
+  final String status;
+
+  /// قبلوا ومستنيين البداية
+  final List<ClanMember> waiting;
+
+  /// داخلين الجلسة فعلاً
+  final List<ClanMember> active;
+
+  const FocusChallenge({
+    required this.id,
+    required this.title,
+    this.hostId,
+    this.hostName,
+    this.focusMin = 25,
+    this.restMin = 5,
+    this.cycles = 1,
+    this.status = 'WAITING',
+    this.waiting = const [],
+    this.active = const [],
+  });
+
+  factory FocusChallenge.fromJson(Map<String, dynamic> j) {
+    final host = (j['host'] is Map) ? j['host'] as Map : const {};
+
+    List<ClanMember> people(String key) =>
+        (j[key] as List? ?? const [])
+            .whereType<Map<String, dynamic>>()
+            /// ️ السيرفر بيرجّع المستخدم مباشرةً هنا (مش ملفوف في
+            ///    `user` زي أعضاء العشيرة) — فبنلفّه عشان نعيد
+            ///    استخدام نفس النموذج.
+            .map((u) => ClanMember.fromJson({'user': u}))
+            .toList();
+
+    return FocusChallenge(
+      id: (j['id'] ?? '').toString(),
+      title: (j['title'] ?? 'تحدي تركيز').toString(),
+      hostId: host['id']?.toString(),
+      hostName: host['username']?.toString(),
+      focusMin: (j['focusMin'] as num?)?.toInt() ?? 25,
+      restMin: (j['restMin'] as num?)?.toInt() ?? 5,
+      cycles: (j['cycles'] as num?)?.toInt() ?? 1,
+      status: (j['status'] ?? 'WAITING').toString(),
+      waiting: people('waiting'),
+      active: people('active'),
+    );
+  }
+
+  /// إجمالي الوقت — آخر دورة بلا راحة بعدها
+  int get totalMin => focusMin * cycles + restMin * (cycles - 1);
+
+  bool get isWaiting => status == 'WAITING';
+  bool get isActive => status == 'ACTIVE';
+  bool get isOver => status == 'FINISHED' || status == 'CANCELLED';
+
+  int get peopleCount => waiting.length + active.length;
+}

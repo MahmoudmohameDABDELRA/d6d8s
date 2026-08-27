@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../core/checkin/checkin_watcher.dart';
 import '../widgets/checkin_dialog.dart';
+import '../widgets/challenge_invite_dialog.dart';
 import '../widgets/floating_nav_bar.dart';
 import '../screens/mountain/mountain_home_screen.dart';
 import '../screens/tasks/tasks_screen.dart';
@@ -79,6 +80,30 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
 
   void _onWatcherChanged() {
     if (!mounted || _dialogOpen) return;
+
+    /**
+     * ️ الدعوة الأول.
+     *
+     *    التحدي بيبدأ في وقت محدد ودعوته ليها صلاحية — لو استنت
+     *    ورا سؤال اطمئنان (اللي ممكن يفضل مأجّل)، التحدي هيبدأ
+     *    من غير المستخدم. سؤال «عملت إيه امبارح؟» يستنى، الدعوة لأ.
+     */
+    final invite = _watcher.currentInvite;
+    if (invite != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted || _dialogOpen) return;
+        _dialogOpen = true;
+        _watcher.pause();
+
+        await showChallengeInvite(context, invite: invite);
+
+        _dialogOpen = false;
+        _watcher.dismissInvite();
+        _watcher.resume();
+      });
+      return;
+    }
+
     final prompt = _watcher.current;
     if (prompt == null) return;
 

@@ -82,7 +82,10 @@ abstract final class ApiEndpoints {
   static const focusStats = '/focus/stats';
   static const focusHistory = '/focus/history';
   static const focusChallenge = '/focus/challenge';
+  static String focusChallengeGet(String id) => '/focus/challenge/$id';
   static String focusChallengeAccept(String id) => '/focus/challenge/$id/accept';
+  static String focusChallengeDecline(String id) => '/focus/challenge/$id/decline';
+  static String focusChallengeLeave(String id) => '/focus/challenge/$id/leave';
   static String focusChallengeStart(String id) => '/focus/challenge/$id/start';
 
   // ── المنبه ──

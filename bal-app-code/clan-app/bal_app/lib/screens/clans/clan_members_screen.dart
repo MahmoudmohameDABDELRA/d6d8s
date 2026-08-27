@@ -8,6 +8,8 @@ import '../../core/theme/app_theme.dart';
 import '../../models/models.dart';
 import '../../widgets/glass_card.dart';
 import '../../widgets/user_avatar.dart';
+import '../../widgets/buttons.dart';
+import '../focus/challenge_room_screen.dart';
 
 /// 👥 أعضاء العشيرة
 ///
@@ -25,6 +27,7 @@ class ClanMembersScreen extends StatefulWidget {
 class _ClanMembersScreenState extends State<ClanMembersScreen> {
   List<ClanMember> _members = [];
   bool _loading = true;
+  bool _creating = false;
   String? _error;
 
   @override
@@ -79,6 +82,8 @@ class _ClanMembersScreenState extends State<ClanMembersScreen> {
                           AppTheme.spaceXl, 0, AppTheme.spaceXl, 120),
                       children: [
                         _summary(c, online),
+                        const SizedBox(height: AppTheme.spaceMd),
+                        _startChallengeButton(c),
                         const SizedBox(height: AppTheme.spaceLg),
                         ..._members.map((m) => _memberTile(c, m)),
                       ],
@@ -86,6 +91,54 @@ class _ClanMembersScreenState extends State<ClanMembersScreen> {
         ),
       ),
     );
+  }
+
+  /// ️ من غير الزرار ده مفيش أي طريقة تبدأ بيها تحدي جماعي —
+  ///    السيرفر كان جاهز والفيتشر مالوش مدخل خالص.
+  Widget _startChallengeButton(BalColors c) {
+    return PillButton(
+      label: 'تحدي تركيز جماعي',
+      icon: Icons.groups_rounded,
+      loading: _creating,
+      onPressed: _createChallenge,
+    );
+  }
+
+  Future<void> _createChallenge() async {
+    final cfg = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (_) => const _ChallengeSetupDialog(),
+    );
+    if (cfg == null) return;
+
+    setState(() => _creating = true);
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+
+    try {
+      final res = await ApiClient.instance.post(
+        ApiEndpoints.focusChallenge,
+        body: {'clanId': widget.clan.id, ...cfg},
+      );
+      final id = res['challenge']?['id']?.toString();
+      if (!mounted) return;
+      setState(() => _creating = false);
+      if (id == null) throw Exception('مفيش معرّف للتحدي');
+
+      navigator.push(
+        MaterialPageRoute(
+          builder: (_) => ChallengeRoomScreen(challengeId: id, amHost: true),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _creating = false);
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(humanError(e, fallback: 'مقدرناش نعمل التحدي')),
+        ),
+      );
+    }
   }
 
   Widget _summary(BalColors c, int online) {
@@ -190,6 +243,148 @@ class _ClanMembersScreenState extends State<ClanMembersScreen> {
                 style: TextStyle(fontSize: 16, color: c.textSecondary)),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════
+//  إعداد التحدي
+// ══════════════════════════════════════════════
+
+class _ChallengeSetupDialog extends StatefulWidget {
+  const _ChallengeSetupDialog();
+
+  @override
+  State<_ChallengeSetupDialog> createState() => _ChallengeSetupDialogState();
+}
+
+class _ChallengeSetupDialogState extends State<_ChallengeSetupDialog> {
+  final _title = TextEditingController(text: 'نذاكر سوا');
+  int _focusMin = 25;
+  int _restMin = 5;
+  int _cycles = 2;
+
+  @override
+  void dispose() {
+    _title.dispose();
+    super.dispose();
+  }
+
+  int get _total => _focusMin * _cycles + _restMin * (_cycles - 1);
+
+  @override
+  Widget build(BuildContext context) {
+    final c = BalColors(context);
+
+    return AlertDialog(
+      backgroundColor: c.surfaceElevated,
+      title: const Text('تحدي تركيز'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: _title,
+              maxLength: 100,
+              decoration: const InputDecoration(
+                labelText: 'اسم التحدي',
+                counterText: '',
+              ),
+            ),
+            const SizedBox(height: AppTheme.spaceMd),
+            _stepper(c, 'تركيز', '$_focusMin د', () {
+              if (_focusMin > 5) setState(() => _focusMin -= 5);
+            }, () {
+              if (_focusMin < 120) setState(() => _focusMin += 5);
+            }),
+            /// ️ السيرفر بيرفض راحة أكتر من 10 دقايق — بنحترم الحد
+            ///    هنا بدل ما نسيب المستخدم يختار ويترفض.
+            _stepper(c, 'راحة', '$_restMin د', () {
+              if (_restMin > 1) setState(() => _restMin -= 1);
+            }, () {
+              if (_restMin < 10) setState(() => _restMin += 1);
+            }),
+            _stepper(c, 'دورات', '$_cycles', () {
+              if (_cycles > 1) setState(() => _cycles -= 1);
+            }, () {
+              if (_cycles < 8) setState(() => _cycles += 1);
+            }),
+            const SizedBox(height: AppTheme.spaceMd),
+            Center(
+              child: Text(
+                'إجمالي $_total دقيقة',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: c.primary,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('إلغاء'),
+        ),
+        TextButton(
+          onPressed: () {
+            final t = _title.text.trim();
+            if (t.isEmpty) return;
+            Navigator.pop(context, {
+              'title': t,
+              'focusMin': _focusMin,
+              'restMin': _restMin,
+              'cycles': _cycles,
+            });
+          },
+          child: const Text('اطلق'),
+        ),
+      ],
+    );
+  }
+
+  Widget _stepper(
+    BalColors c,
+    String label,
+    String value,
+    VoidCallback onMinus,
+    VoidCallback onPlus,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppTheme.spaceXs),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(label,
+                style: TextStyle(fontSize: 15, color: c.textSecondary)),
+          ),
+          IconButton(
+            icon: const Icon(Icons.remove_circle_outline_rounded),
+            color: c.textSecondary,
+            onPressed: onMinus,
+          ),
+          SizedBox(
+            width: 55,
+            child: Text(
+              value,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16.5,
+                fontWeight: FontWeight.w600,
+                color: c.text,
+              ),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.add_circle_outline_rounded),
+            color: c.primary,
+            onPressed: onPlus,
+          ),
+        ],
       ),
     );
   }
