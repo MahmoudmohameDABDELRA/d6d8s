@@ -1,6 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../../core/realtime/realtime_service.dart';
 
 import '../../core/network/api_client.dart';
 import '../../core/network/api_error.dart';
@@ -49,9 +52,14 @@ class _ConversationScreenState extends State<ConversationScreen> {
   bool _sending = false;
   String? _error;
 
-  /// ️ استطلاع كل 5 ثواني. مش مثالي — الأفضل Socket.io — بس
-  ///    بيشتغل دلوقتي وبيتشال بسطر واحد لما نوصّل السوكيت.
+  /// ️ الاستطلاع بقى **احتياطي** بس.
+  ///
+  ///    الرسايل بتوصل لحظياً عبر Socket.io. الاستطلاع فضل موجود
+  ///    بفاصل أطول (15 ثانية بدل 5) عشان لو السوكيت اتقطع —
+  ///    شبكة محدودة أو بروكسي بيمنع WebSocket — الشاشة ما تبقاش
+  ///    ميتة. شيله خالص معناه إن فشل السوكيت = شات مش شغال.
   Timer? _poll;
+  StreamSubscription? _sub;
 
   @override
   void initState() {
@@ -63,11 +71,28 @@ class _ConversationScreenState extends State<ConversationScreen> {
     final user = await TokenStore.getUser();
     _myId = user?['id']?.toString();
     await _load();
-    _poll = Timer.periodic(const Duration(seconds: 5), (_) => _load(silent: true));
+
+    if (!mounted) return;
+    final realtime = context.read<RealtimeService>();
+
+    /// ندخل غرفة المحادثة عشان السيرفر يبعتلنا رسايلها
+    realtime.joinConversation(widget.conversationId);
+
+    _sub = realtime.onMessage.listen((msg) {
+      /// ️ نتأكد إن الرسالة للمحادثة دي — القناة بتوصّل كل
+      ///    محادثات المستخدم، فمن غير الفلتر ده هتظهر رسالة
+      ///    من محادثة تانية هنا.
+      final cid = (msg['conversationId'] ?? msg['conversation']?['id'])?.toString();
+      if (cid != null && cid != widget.conversationId) return;
+      _load(silent: true);
+    });
+
+    _poll = Timer.periodic(const Duration(seconds: 15), (_) => _load(silent: true));
   }
 
   @override
   void dispose() {
+    _sub?.cancel();
     _poll?.cancel();
     _input.dispose();
     _scroll.dispose();

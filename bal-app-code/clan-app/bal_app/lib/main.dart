@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'core/app_state.dart';
 import 'core/checkin/checkin_watcher.dart';
+import 'core/realtime/realtime_service.dart';
 import 'core/theme/app_theme.dart';
 import 'screens/auth/auth_gate.dart';
 import 'shell/main_shell.dart';
@@ -27,6 +28,11 @@ class BalApp extends StatelessWidget {
          *    اتنقل المستخدم بين الشاشات.
          */
         ChangeNotifierProvider(create: (_) => CheckInWatcher()),
+        /**
+         * 📡 الوصول المستمر — الرسايل والإشعارات توصل لحظياً.
+         *    عايش هنا عشان يفضل موصول مهما اتنقل المستخدم.
+         */
+        ChangeNotifierProvider(create: (_) => RealtimeService()),
       ],
       child: Consumer<AppState>(
         builder: (context, state, _) {

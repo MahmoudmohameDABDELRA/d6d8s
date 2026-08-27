@@ -41,6 +41,8 @@ dependencies:
   shared_preferences: ^2.3.3
   intl: ^0.20.2
   url_launcher: ^6.3.1
+  # الوصول المستمر — الرسايل والإشعارات توصل لحظياً بدل الاستطلاع
+  socket_io_client: ^3.0.2
   web: ^1.1.1
 
 dev_dependencies:

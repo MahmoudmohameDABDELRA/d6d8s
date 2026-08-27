@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../network/api_client.dart';
+import '../realtime/realtime_service.dart';
 import '../network/api_endpoints.dart';
 import '../../models/models.dart';
 
@@ -38,6 +39,10 @@ class CheckInWatcher extends ChangeNotifier {
   Timer? _timer;
   List<BalTask> _tasks = const [];
 
+  /// ️ الاشتراكات في البث اللحظي — الإشعار بيوصل في نفس اللحظة
+  ///    بدل ما يستنى `syncPending` عند فتح التطبيق.
+  final List<StreamSubscription> _subs = [];
+
   /// المهام اللي اتسألت في الجلسة دي — ضد التكرار
   final Set<String> _asked = {};
 
@@ -71,6 +76,69 @@ class CheckInWatcher extends ChangeNotifier {
     _timer?.cancel();
     _timer = Timer.periodic(_tick, (_) => _sweep());
     _sweep();
+  }
+
+  /// يوصّل البث اللحظي — الإشعارات توصل من السيرفر فوراً.
+  ///
+  /// ️ المسح المحلي **ما اتشالش**: التطبيق عارف مواعيد المهام
+  ///    بنفسه، فالبوب-أب بيطلع في ميعاده حتى لو النت مقطوع.
+  ///    السوكيت بيضيف الإشعارات اللي السيرفر بيولّدها (دعوات
+  ///    التحدي مثلاً) — مش بديل عن المسح.
+  void bindRealtime(RealtimeService realtime) {
+    for (final s in _subs) {
+      s.cancel();
+    }
+    _subs.clear();
+
+    _subs.add(realtime.onNotification.listen(_ingestNotification));
+
+    /// مهام النهاردة نزلت — نحدّث القائمة عشان المواعيد تتراقب
+    _subs.add(realtime.onTasksGenerated.listen((_) => notifyListeners()));
+  }
+
+  /// يحوّل إشعار جاي من السوكيت لعنصر في الطابور المناسب
+  void _ingestNotification(Map<String, dynamic> raw) {
+    final data = raw['data'];
+    if (data is! Map) return;
+
+    final nid = raw['id']?.toString();
+    if (nid == null) return;
+
+    // دعوة تحدي
+    if (data['action'] == 'FOCUS_CHALLENGE') {
+      final cid = data['challengeId']?.toString();
+      if (cid == null) return;
+      if (_invites.any((i) => i.notificationId == nid)) return;
+
+      _invites.add(ChallengeInvite(
+        notificationId: nid,
+        challengeId: cid,
+        title: (raw['title'] ?? 'تحدي تركيز').toString(),
+        body: (raw['body'] ?? '').toString(),
+      ));
+      notifyListeners();
+      return;
+    }
+
+    // سؤال اطمئنان
+    if (raw['type'] == 'TASK_CHECKIN' && data['canReply'] == true) {
+      if (_queue.any((p) => p.notificationId == nid)) return;
+
+      final taskId = data['taskId']?.toString();
+      if (taskId != null) _asked.add(taskId);
+
+      _queue.add(CheckInPrompt(
+        task: _findTask(taskId) ??
+            BalTask(
+              id: taskId ?? '',
+              title: (data['taskTitle'] ?? 'مهمتك').toString(),
+            ),
+        dueAt: DateTime.tryParse(raw['createdAt']?.toString() ?? '') ?? DateTime.now(),
+        notificationId: nid,
+        serverQuestion: raw['body']?.toString(),
+      ));
+      notifyListeners();
+    }
   }
 
   void stop() {
@@ -254,6 +322,10 @@ class CheckInWatcher extends ChangeNotifier {
 
   @override
   void dispose() {
+    for (final s in _subs) {
+      s.cancel();
+    }
+    _subs.clear();
     _timer?.cancel();
     super.dispose();
   }

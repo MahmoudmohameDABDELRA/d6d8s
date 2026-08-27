@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../core/checkin/checkin_watcher.dart';
+import '../core/realtime/realtime_service.dart';
 import '../widgets/checkin_dialog.dart';
 import '../widgets/challenge_invite_dialog.dart';
 import '../widgets/floating_nav_bar.dart';
@@ -31,6 +32,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   int _index = 0;
 
   late final CheckInWatcher _watcher;
+  late final RealtimeService _realtime;
 
   /// ⚠️ حارس ضد فتح بوب-أبين فوق بعض: الحلقة بتشتغل كل 30 ثانية،
   ///    ولو مهمتين خلصوا في نفس الوقت الاتنين هيتضافوا للطابور —
@@ -63,6 +65,11 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     _watcher.addListener(_onWatcherChanged);
     _watcher.start();
 
+    /// 📡 الوصول المستمر
+    _realtime = context.read<RealtimeService>();
+    _watcher.bindRealtime(_realtime);
+    _realtime.connect();
+
     // أسئلة اتخزنت في السيرفر والتطبيق كان مقفول
     _watcher.syncPending();
   }
@@ -75,6 +82,11 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     if (state == AppLifecycleState.resumed) {
       _watcher.resume();
       _watcher.syncPending();
+
+      /// ️ نظام التشغيل بيقفل السوكيت لما التطبيق يروح للخلفية.
+      ///    من غير إعادة الاتصال، الرسايل بتبطل توصل والمستخدم
+      ///    مش هيعرف ليه.
+      if (!_realtime.isConnected) _realtime.connect();
     }
   }
 
@@ -128,6 +140,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
     _watcher.removeListener(_onWatcherChanged);
     _watcher.stop();
+    _realtime.disconnect();
     super.dispose();
   }
 
