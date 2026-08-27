@@ -207,3 +207,92 @@ class BalTask {
 
   bool get fromMountain => source == 'JOURNEY';
 }
+
+/// 🛡️ العشيرة — مجموعة بتجمع ناس ليهم نفس الاهتمام
+class Clan {
+  final String id;
+  final String name;
+  final String? description;
+  final String? icon;
+
+  /// GLOBAL = عامة بلا مالك · PRIVATE = خاصة بكود دعوة
+  final String type;
+  final String? category;
+  final String? inviteCode;
+  final int membersCount;
+  final int? maxMembers;
+
+  /// LEADER أو MEMBER — دوري أنا في العشيرة دي
+  final String myRole;
+
+  const Clan({
+    required this.id,
+    required this.name,
+    this.description,
+    this.icon,
+    this.type = 'GLOBAL',
+    this.category,
+    this.inviteCode,
+    this.membersCount = 0,
+    this.maxMembers,
+    this.myRole = 'MEMBER',
+  });
+
+  factory Clan.fromJson(Map<String, dynamic> j) => Clan(
+        id: (j['id'] ?? '').toString(),
+        name: (j['name'] ?? '').toString(),
+        description: j['description']?.toString(),
+        icon: j['icon']?.toString(),
+        type: (j['type'] ?? 'GLOBAL').toString(),
+        category: j['category']?.toString(),
+        inviteCode: j['inviteCode']?.toString(),
+        membersCount: (j['membersCount'] as num?)?.toInt() ?? 0,
+        maxMembers: (j['maxMembers'] as num?)?.toInt(),
+        myRole: (j['myRole'] ?? 'MEMBER').toString(),
+      );
+
+  bool get isPrivate => type == 'PRIVATE';
+  bool get isLeader => myRole == 'LEADER';
+
+  /// العشائر العامة بلا حد أعضاء (maxMembers = null)
+  bool get isFull => maxMembers != null && membersCount >= maxMembers!;
+}
+
+/// عضو في عشيرة
+class ClanMember {
+  final String id;
+  final String username;
+  final String? profileImage;
+  final String? specialty;
+  final String role;
+  final DateTime? lastSeen;
+
+  const ClanMember({
+    required this.id,
+    required this.username,
+    this.profileImage,
+    this.specialty,
+    this.role = 'MEMBER',
+    this.lastSeen,
+  });
+
+  factory ClanMember.fromJson(Map<String, dynamic> j) {
+    final u = (j['user'] is Map) ? j['user'] as Map : const {};
+    return ClanMember(
+      id: (u['id'] ?? j['id'] ?? '').toString(),
+      username: (u['username'] ?? 'عضو').toString(),
+      profileImage: u['profileImage']?.toString(),
+      specialty: u['specialty']?.toString(),
+      role: (j['role'] ?? 'MEMBER').toString(),
+      lastSeen: DateTime.tryParse((u['lastSeen'] ?? '').toString()),
+    );
+  }
+
+  bool get isLeader => role == 'LEADER';
+
+  /// ️ نشط دلوقتي = آخر ظهور خلال 5 دقايق
+  bool get isOnline {
+    if (lastSeen == null) return false;
+    return DateTime.now().difference(lastSeen!).inMinutes < 5;
+  }
+}

@@ -100,6 +100,11 @@ abstract final class ApiEndpoints {
   static const clansPrivateCreate = '/clans/private/create';
   static const clansPrivateJoin = '/clans/private/join';
   static const myClans = '/clans/my-clans';
+  static const clansAutoAssign = '/clans/global/auto-assign';
+  static const clansGlobalJoin = '/clans/global/join';
+  static const clansActiveSession = '/clans/global/active-session';
+  static String clanMembers(String id) => '/clans/$id/members';
+  static String clanLeave(String id) => '/clans/leave/$id';
 
   // ── الإشعارات والبوب-أب ──
   static const notifications = '/notifications';

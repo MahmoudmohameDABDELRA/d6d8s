@@ -3,8 +3,9 @@ import '../core/theme/app_colors.dart';
 import '../core/theme/app_theme.dart';
 import '../screens/mountain/dream_setup_screen.dart';
 import '../screens/focus/focus_setup_screen.dart';
+import '../screens/chat/chat_screen.dart';
 
-/// ➕ قائمة الإنشاء السريع (Hero FAB) — 4 خيارات
+/// ➕ قائمة الإنشاء السريع (Hero FAB)
 Future<void> showCreateMenu(BuildContext context) {
   return showModalBottomSheet(
     context: context,
@@ -37,14 +38,15 @@ class _CreateMenuSheet extends StatelessWidget {
           MaterialPageRoute(builder: (_) => const FocusSetupScreen()),
         ),
       ),
+      /// ️ الرسائل كانت في الناف بار وخرجت منه لما دخلت العشائر.
+      ///    محطوطة هنا عشان تفضل متاحة — مش مشالة.
       _MenuItem(
-        icon: Icons.alarm_rounded,
-        label: 'منبه',
+        icon: Icons.chat_bubble_rounded,
+        label: 'رسالة',
         color: c.friendship,
-        onTap: () {
-          Navigator.of(context).pop();
-          // TODO: شاشة المنبهات (تبنى في مرحلة المنبه)
-        },
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const ChatScreen()),
+        ),
       ),
     ];
 

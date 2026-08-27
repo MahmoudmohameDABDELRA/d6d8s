@@ -24,11 +24,13 @@ class FloatingNavBar extends StatelessWidget {
     required this.onHeroFab,
   });
 
+  /// ️ الفهرس 2 محجوز للـ FAB في النص — مش تبويب.
+  ///    الترتيب هنا لازم يطابق `_screens` في MainShell بالظبط.
   static const items = [
     NavItem(Icons.terrain_rounded, 'الجبل'),
     NavItem(Icons.check_circle_rounded, 'المهام'),
     NavItem(Icons.add_rounded, ''),
-    NavItem(Icons.chat_bubble_rounded, 'الرسائل'),
+    NavItem(Icons.groups_rounded, 'العشائر'),
     NavItem(Icons.person_rounded, 'أنا'),
   ];
 

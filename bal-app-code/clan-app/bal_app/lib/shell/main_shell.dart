@@ -7,6 +7,7 @@ import '../widgets/floating_nav_bar.dart';
 import '../screens/mountain/mountain_home_screen.dart';
 import '../screens/tasks/tasks_screen.dart';
 import '../screens/chat/chat_screen.dart';
+import '../screens/clans/clans_screen.dart';
 import '../screens/profile/profile_screen.dart';
 import '../widgets/create_menu.dart';
 
@@ -35,11 +36,21 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   ///    بس بنعرض واحد ولما يتقفل نعرض اللي بعده.
   bool _dialogOpen = false;
 
+  /// ️ الترتيب لازم يطابق `FloatingNavBar.items` بالظبط.
+  ///
+  ///    الفهرس 2 هو الـ FAB في نص الناف بار — مش تبويب، فبيتنده
+  ///    عليه `showCreateMenu` مش تغيير شاشة. بس `IndexedStack`
+  ///    محتاج عنصر في المكان ده عشان الفهارس تفضل مظبوطة.
+  ///
+  ///    الباج القديم: الناف بار كان بيبعت الفهرس 4 لـ«أنا» والقايمة
+  ///    فيها 4 عناصر بس (0-3) — الضغط على «أنا» كان بيرمي
+  ///    RangeError ويكسر الشاشة.
   static const _screens = [
-    MountainHomeScreen(),
-    TasksScreen(),
-    ChatScreen(),
-    ProfileScreen(),
+    MountainHomeScreen(),   // 0
+    TasksScreen(),          // 1
+    SizedBox.shrink(),      // 2 — مكان الـ FAB
+    ClansScreen(),          // 3
+    ProfileScreen(),        // 4
   ];
 
   @override
@@ -106,7 +117,12 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
       ),
       bottomNavigationBar: FloatingNavBar(
         selectedIndex: _index,
-        onSelect: (i) => setState(() => _index = i),
+        /// ️ الفهرس 2 هو الـ FAB — لو وصلنا بأي طريقة نتجاهله
+        ///    بدل ما نعرض شاشة فاضية.
+        onSelect: (i) {
+          if (i == 2) return;
+          setState(() => _index = i);
+        },
         onHeroFab: () => showCreateMenu(context),
       ),
     );
