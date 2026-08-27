@@ -5,6 +5,8 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
 import '../../widgets/buttons.dart';
 import '../../widgets/glass_card.dart';
+import '../../models/models.dart';
+import 'conversation_screen.dart';
 
 /// 💬 شاشة الرسائل — تبويبان (محادثات/عشيرة) + بحث (الرؤية 4.1-4.4)
 class ChatScreen extends StatefulWidget {
@@ -17,9 +19,14 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   int _tab = 0;
   bool _loading = true;
-  List<Map<String, dynamic>> _conversations = [];
+  List<Conversation> _conversations = [];
+  List<Clan> _clans = [];
   List<Map<String, dynamic>> _searchResults = [];
   bool _searching = false;
+
+  /// ️ كان `catch (_)` بيبلع الخطأ، فلو السيرفر واقع المستخدم
+  ///    يشوف «مفيش محادثات» ويفتكر إن دي الحقيقة.
+  String? _error;
 
   @override
   void initState() {
@@ -29,15 +36,76 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Future<void> _load() async {
     try {
-      final res = await ApiClient.instance.get('/chat/conversations');
+      /// المحادثات وشاتات العشائر مع بعض — نداءين متوازيين
+      final results = await Future.wait([
+        ApiClient.instance.get(ApiEndpoints.conversations),
+        ApiClient.instance.get(ApiEndpoints.clanChats).catchError(
+              (_) => <String, dynamic>{},
+            ),
+      ]);
+
+      if (!mounted) return;
       setState(() {
-        _conversations = (res['conversations'] as List? ?? [])
+        _conversations = (results[0]['conversations'] as List? ?? const [])
             .whereType<Map<String, dynamic>>()
+            .map(Conversation.fromJson)
+            .toList();
+        _clans = (results[1]['clans'] as List? ?? const [])
+            .whereType<Map<String, dynamic>>()
+            .map(Clan.fromJson)
             .toList();
         _loading = false;
+        _error = null;
       });
-    } catch (_) {
-      setState(() => _loading = false);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = e.toString().contains('SocketException')
+            ? 'مفيش اتصال بالسيرفر'
+            : e.toString().replaceAll('Exception: ', '');
+      });
+    }
+  }
+
+  /// يفتح المحادثة — دي كانت مفقودة تماماً
+  void _openConversation(Conversation conv) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ConversationScreen(
+          conversationId: conv.id,
+          title: conv.title,
+        ),
+      ),
+    ).then((_) => _load());
+  }
+
+  /// يفتح شات العشيرة (بينشئه لو أول مرة)
+  Future<void> _openClanChat(Clan clan) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final res =
+          await ApiClient.instance.get(ApiEndpoints.openClanChat(clan.id));
+      final convId = (res['conversationId'] ?? res['conversation']?['id'])
+          ?.toString();
+      if (convId == null) throw Exception('مفيش شات للعشيرة دي');
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ConversationScreen(
+            conversationId: convId,
+            title: clan.name,
+            isGroup: true,
+          ),
+        ),
+      ).then((_) => _load());
+    } catch (e) {
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+      );
     }
   }
 
@@ -214,6 +282,26 @@ class _ChatScreenState extends State<ChatScreen> {
                               ? 'اتبعت طلب صداقة 💌'
                               : 'اتبعت الرسالة')),
                     );
+
+                    /// ️ لو اتفتحت محادثة فعلية (مش طلب صداقة) نودّيه
+                    ///    فيها على طول. الكود القديم كان بيبعت الرسالة
+                    ///    ويسيب المستخدم في شاشة البحث بلا أي طريق
+                    ///    يوصل بيها للمحادثة.
+                    final convId = (res['conversationId'] ??
+                            res['conversation']?['id'])
+                        ?.toString();
+                    if (res['isFriendRequest'] != true && convId != null) {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ConversationScreen(
+                            conversationId: convId,
+                            title: (u['username'] ?? 'محادثة').toString(),
+                          ),
+                        ),
+                      );
+                      if (mounted) _load();
+                    }
                   } catch (e) {
                     if (!mounted) return;
                     messenger.showSnackBar(
@@ -233,74 +321,253 @@ class _ChatScreenState extends State<ChatScreen> {
 
   // قائمة المحادثات
   Widget _conversationsList(BalColors c) {
-    if (_loading) {
-      return const Center(child: CircularProgressIndicator());
-    }
+    if (_loading) return const Center(child: CircularProgressIndicator());
+    if (_error != null) return _errorView(c);
+
     if (_conversations.isEmpty) {
-      return Center(
-        child: Text('مفيش محادثات — ابحث عن ناس تبدأ',
-            style: TextStyle(color: c.textSecondary)),
-      );
+      return _empty(c, Icons.forum_rounded, 'مفيش محادثات',
+          'دوّر على حد في تبويب البحث وابدأ كلام');
     }
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 23, vertical: 9),
-      itemCount: _conversations.length,
-      itemBuilder: (context, i) {
-        final conv = _conversations[i];
-        return Container(
-          margin: const EdgeInsets.only(bottom: 9),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: c.surfaceElevated.withValues(alpha: 0.7),
-            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-            border: Border.all(color: c.border),
-          ),
-          child: Row(
-            children: [
-              CircleAvatar(
-                radius: 23.5,
-                backgroundColor: c.friendship.withValues(alpha: 0.25),
-                child: Icon(Icons.person_rounded, color: c.friendship),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Text('${conv['title'] ?? 'محادثة'}',
-                    style: TextStyle(
-                        fontSize: 17.5,
-                        fontWeight: FontWeight.w600,
-                        color: c.text)),
-              ),
-            ],
-          ),
-        );
-      },
+
+    return RefreshIndicator(
+      onRefresh: _load,
+      child: ListView.builder(
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppTheme.spaceXl, vertical: AppTheme.spaceSm),
+        itemCount: _conversations.length,
+        itemBuilder: (context, i) => _conversationTile(c, _conversations[i]),
+      ),
     );
   }
 
-  // قائمة العشائر
-  Widget _clansList(BalColors c) {
-    return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 23, vertical: 9),
-      children: [
-        GlassCard(
-          margin: const EdgeInsets.only(bottom: 9),
-          child: Row(
-            children: [
-              Icon(Icons.groups_rounded, color: c.friendship, size: 32),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Text('عشائر عامة (حسب اهتمامك)',
-                    style: TextStyle(fontSize: 17.5, fontWeight: FontWeight.w600, color: c.text)),
+  /// ️ الكارت ده كان **مش قابل للضغط** — مجرد صندوق ميت. المستخدم
+  ///    كان يقدر يبدأ محادثة ومش يقدر يفتحها.
+  Widget _conversationTile(BalColors c, Conversation conv) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppTheme.spaceSm),
+      child: GlassCard(
+        padding: const EdgeInsets.all(AppTheme.spaceMd),
+        onTap: () => _openConversation(conv),
+        child: Row(
+          children: [
+            Stack(
+              children: [
+                CircleAvatar(
+                  radius: 25,
+                  backgroundColor: c.friendship.withValues(alpha: 0.25),
+                  backgroundImage:
+                      conv.avatar != null ? NetworkImage(conv.avatar!) : null,
+                  child: conv.avatar == null
+                      ? Text(
+                          conv.title.isNotEmpty ? conv.title[0] : '؟',
+                          style: TextStyle(
+                            fontSize: 18.5,
+                            fontWeight: FontWeight.w600,
+                            color: c.text,
+                          ),
+                        )
+                      : null,
+                ),
+                if (conv.isOnline)
+                  Positioned(
+                    right: 0,
+                    bottom: 0,
+                    child: Container(
+                      width: 14,
+                      height: 14,
+                      decoration: BoxDecoration(
+                        color: c.primary,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: c.background, width: 2),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(width: AppTheme.spaceMd),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    conv.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 16.5,
+                      fontWeight: FontWeight.w600,
+                      color: c.text,
+                    ),
+                  ),
+                  if (conv.lastMessage != null) ...[
+                    const SizedBox(height: 2.5),
+                    Text(
+                      conv.lastMessage!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: conv.unread > 0 ? c.text : c.textSecondary,
+                        fontWeight: conv.unread > 0
+                            ? FontWeight.w500
+                            : FontWeight.w400,
+                      ),
+                    ),
+                  ],
+                ],
               ),
-              OutlinePillButton(label: 'دخول', onPressed: () {}),
-            ],
-          ),
+            ),
+            /// عداد غير المقروء — السيرفر بيحسبه وماكانش بيتعرض
+            if (conv.unread > 0)
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppTheme.spaceSm, vertical: 2.5),
+                decoration: BoxDecoration(
+                  color: c.primary,
+                  borderRadius: BorderRadius.circular(AppTheme.radiusPill),
+                ),
+                child: Text(
+                  '${conv.unread}',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                    color: c.onPrimary,
+                  ),
+                ),
+              ),
+          ],
         ),
-        const SizedBox(height: 9),
-        Text('العشائر الخاصة بتظهر هنا بعد ما تنضم',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: c.textSecondary, fontSize: 14)),
-      ],
+      ),
+    );
+  }
+
+  /// قائمة شاتات العشائر — كانت نص ثابت مش بيانات
+  Widget _clansList(BalColors c) {
+    if (_loading) return const Center(child: CircularProgressIndicator());
+    if (_error != null) return _errorView(c);
+
+    if (_clans.isEmpty) {
+      return _empty(c, Icons.groups_rounded, 'مفيش عشائر',
+          'انضم لعشيرة من تبويب العشائر وهتلاقي شاتها هنا');
+    }
+
+    return RefreshIndicator(
+      onRefresh: _load,
+      child: ListView.builder(
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppTheme.spaceXl, vertical: AppTheme.spaceSm),
+        itemCount: _clans.length,
+        itemBuilder: (context, i) {
+          final clan = _clans[i];
+          return Padding(
+            padding: const EdgeInsets.only(bottom: AppTheme.spaceSm),
+            child: GlassCard(
+              padding: const EdgeInsets.all(AppTheme.spaceMd),
+              onTap: () => _openClanChat(clan),
+              child: Row(
+                children: [
+                  Container(
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: c.friendship.withValues(alpha: 0.25),
+                    ),
+                    child: Icon(
+                      clan.isPrivate ? Icons.lock_rounded : Icons.groups_rounded,
+                      color: c.friendship,
+                      size: 25,
+                    ),
+                  ),
+                  const SizedBox(width: AppTheme.spaceMd),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          clan.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 16.5,
+                            fontWeight: FontWeight.w600,
+                            color: c.text,
+                          ),
+                        ),
+                        const SizedBox(height: 2.5),
+                        Text(
+                          '${clan.membersCount} عضو',
+                          style: TextStyle(
+                              fontSize: 14, color: c.textSecondary),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(Icons.chevron_left_rounded, color: c.textSecondary),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _empty(BalColors c, IconData icon, String title, String hint) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppTheme.spaceXxl),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 65, color: c.textDisabled),
+            const SizedBox(height: AppTheme.spaceLg),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 18.5,
+                fontWeight: FontWeight.w600,
+                color: c.text,
+              ),
+            ),
+            const SizedBox(height: AppTheme.spaceSm),
+            Text(
+              hint,
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 15, color: c.textSecondary),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _errorView(BalColors c) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppTheme.spaceXxl),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.cloud_off_rounded, size: 55, color: c.textDisabled),
+            const SizedBox(height: AppTheme.spaceLg),
+            Text(
+              _error!,
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 15, color: c.textSecondary),
+            ),
+            const SizedBox(height: AppTheme.spaceXl),
+            OutlinePillButton(
+              label: 'جرّب تاني',
+              icon: Icons.refresh_rounded,
+              onPressed: () {
+                setState(() => _loading = true);
+                _load();
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

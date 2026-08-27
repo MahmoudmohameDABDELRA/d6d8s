@@ -296,3 +296,77 @@ class ClanMember {
     return DateTime.now().difference(lastSeen!).inMinutes < 5;
   }
 }
+
+/// 💬 محادثة في قائمة الرسائل
+class Conversation {
+  final String id;
+  final String? otherUserId;
+  final String title;
+  final String? avatar;
+  final String? lastMessage;
+  final DateTime? lastMessageAt;
+  final int unread;
+  final bool isOnline;
+
+  const Conversation({
+    required this.id,
+    this.otherUserId,
+    this.title = 'محادثة',
+    this.avatar,
+    this.lastMessage,
+    this.lastMessageAt,
+    this.unread = 0,
+    this.isOnline = false,
+  });
+
+  /// ️ السيرفر بيرجّع `user` مش `title` — النسخة القديمة كانت بتقرا
+  ///    `conv['title']` اللي مش موجود، فكل المحادثات كانت بتظهر
+  ///    باسم «محادثة» وصورة فاضية.
+  factory Conversation.fromJson(Map<String, dynamic> j) {
+    final u = (j['user'] is Map) ? j['user'] as Map : const {};
+    return Conversation(
+      id: (j['id'] ?? '').toString(),
+      otherUserId: u['id']?.toString(),
+      title: (u['username'] ?? j['title'] ?? 'محادثة').toString(),
+      avatar: u['profileImage']?.toString(),
+      lastMessage: j['lastMessage']?.toString(),
+      lastMessageAt: DateTime.tryParse((j['lastMessageAt'] ?? '').toString()),
+      unread: (j['unread'] as num?)?.toInt() ?? 0,
+      isOnline: u['isOnline'] == true,
+    );
+  }
+}
+
+/// رسالة داخل محادثة
+class ChatMessage {
+  final String id;
+  final String text;
+  final String senderId;
+  final String? senderName;
+  final DateTime? createdAt;
+  final bool isDeleted;
+  final bool isEdited;
+
+  const ChatMessage({
+    required this.id,
+    required this.text,
+    required this.senderId,
+    this.senderName,
+    this.createdAt,
+    this.isDeleted = false,
+    this.isEdited = false,
+  });
+
+  factory ChatMessage.fromJson(Map<String, dynamic> j) {
+    final s = (j['sender'] is Map) ? j['sender'] as Map : const {};
+    return ChatMessage(
+      id: (j['id'] ?? '').toString(),
+      text: (j['text'] ?? j['content'] ?? '').toString(),
+      senderId: (j['senderId'] ?? s['id'] ?? '').toString(),
+      senderName: s['username']?.toString(),
+      createdAt: DateTime.tryParse((j['createdAt'] ?? '').toString()),
+      isDeleted: j['isDeleted'] == true,
+      isEdited: j['isEdited'] == true,
+    );
+  }
+}

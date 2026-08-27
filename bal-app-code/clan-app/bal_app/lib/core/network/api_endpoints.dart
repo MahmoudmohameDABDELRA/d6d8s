@@ -94,6 +94,12 @@ abstract final class ApiEndpoints {
   // ── الرسائل والعشائر ──
   static const chatStart = '/chat/start';
   static const searchUsers = '/chat/search';
+  static const conversations = '/chat/conversations';
+  static const clanChats = '/chat/clans';
+  static const chatRequests = '/chat/requests';
+  static String chatMessages(String convId) => '/chat/$convId/messages';
+  static String openClanChat(String clanId) => '/chat/clans/$clanId/open';
+  static String respondRequest(String id) => '/chat/requests/$id/respond';
   static const friendRequests = '/social/friends/requests';
   static String respondFriendRequest(String id) =>
       '/social/friends/requests/$id/respond';
