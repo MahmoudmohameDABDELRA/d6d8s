@@ -5,6 +5,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
 import '../../widgets/buttons.dart';
 import '../../widgets/glass_card.dart';
+import '../alarm/alarms_screen.dart';
 
 /// 👤 شاشة «أنا» — البروفايل + الإعدادات + خروج
 class ProfileScreen extends StatelessWidget {
@@ -71,9 +72,19 @@ class ProfileScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 23),
-            _actionTile(context, Icons.alarm_rounded, 'المنبهات', '4:00 فجراً', () {}),
-            _actionTile(context, Icons.menu_book_rounded, 'التوثيق الأسبوعي', '', () {}),
-            _actionTile(context, Icons.settings_rounded, 'الإعدادات', '', () {}),
+            /// ️ التلاتة دول كانوا أزرار فاضية `() {}`، وأولهم كان
+            ///    بيعرض «4:00 فجراً» — وقت مخترع مش من أي منبه حقيقي.
+            ///    الزرار اللي بيتضغط ومش بيعمل حاجة أسوأ من زرار مش
+            ///    موجود، والوقت المخترع أسوأ لأنه بيدّعي بيانات.
+            _actionTile(
+              context,
+              Icons.alarm_rounded,
+              'المنبهات',
+              '',
+              () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const AlarmsScreen()),
+              ),
+            ),
             const SizedBox(height: 27.5),
             OutlinePillButton(
               label: 'تسجيل الخروج',

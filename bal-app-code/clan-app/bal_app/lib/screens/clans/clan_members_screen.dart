@@ -83,7 +83,13 @@ class _ClanMembersScreenState extends State<ClanMembersScreen> {
                       children: [
                         _summary(c, online),
                         const SizedBox(height: AppTheme.spaceMd),
-                        _startChallengeButton(c),
+                        /// ️ التحدي لصاحب العشيرة الخاصة بس — السيرفر
+                        ///    بيرفض غير كده بـ 400/403. عرض الزرار للكل
+                        ///    معناه إن المستخدم يضغط ويترفض بلا سبب واضح.
+                        if (widget.clan.isPrivate && widget.clan.isLeader)
+                          _startChallengeButton(c)
+                        else
+                          _challengeHint(c),
                         const SizedBox(height: AppTheme.spaceLg),
                         ..._members.map((m) => _memberTile(c, m)),
                       ],
@@ -101,6 +107,34 @@ class _ClanMembersScreenState extends State<ClanMembersScreen> {
       icon: Icons.groups_rounded,
       loading: _creating,
       onPressed: _createChallenge,
+    );
+  }
+
+  /// يشرح ليه الزرار مش موجود بدل ما يختفي بلا تفسير
+  Widget _challengeHint(BalColors c) {
+    final reason = !widget.clan.isPrivate
+        ? 'التحديات الجماعية في العشائر الخاصة بس'
+        : 'صاحب العشيرة بس اللي يقدر يبدأ تحدي';
+
+    return Container(
+      padding: const EdgeInsets.all(AppTheme.spaceMd),
+      decoration: BoxDecoration(
+        color: c.surface.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        border: Border.all(color: c.border),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.info_outline_rounded, size: 18, color: c.textDisabled),
+          const SizedBox(width: AppTheme.spaceSm),
+          Expanded(
+            child: Text(
+              reason,
+              style: TextStyle(fontSize: 13.5, color: c.textSecondary),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
