@@ -123,19 +123,35 @@ console.log('\n═══ 3. ⚠️ المسودة ضايعة؟ ═══');
 const goals = await call('GET', '/goals', { token });
 const list = goals.body?.goals ?? [];
 
-const draftVisible = list.some((g) => g.id === draftId);
+/**
+ * ️ إخفاء المسودة عن القوايم **قرار صح**: جبل نص مبني مش هدف،
+ *    وعرضه في شاشة الأهداف بيلخبط. اللي كان غلط إنه مفيش أي
+ *    مسار تاني يرجّعها — فالحلم كان بيضيع نهائي.
+ */
+ok(
+  !list.some((g) => g.id === draftId),
+  'المسودة مخفية عن قايمة الأهداف (قرار مقصود)',
+);
 
-if (draftVisible) {
-  ok(true, 'المسودة ظاهرة — المستخدم يقدر يكمّلها');
-} else {
-  console.log(
-    '  ️ المسودة مخفية عن القوايم — لو قفل التطبيق دلوقتي الحلم يضيع',
-  );
-  ok(
-    !!dream.body?.resumable || true,
-    'موثّق: المسودة مخفية (سلوك حالي)',
-  );
-}
+const pending = await call('GET', '/goals/dream/pending', { token });
+ok(pending.status === 200, '/goals/dream/pending بيرد');
+
+ok(
+  pending.body?.pending?.id === draftId,
+  'الاستئناف بيرجّع نفس المسودة — الحلم مش بيضيع',
+);
+ok(
+  pending.body?.pending?.title === 'أتعلم Flutter واشتغل بيه',
+  'العنوان اللي كتبه محفوظ',
+);
+ok(
+  pending.body?.pending?.hasPlan === false,
+  'لسه مفيش خطة — يرجع لمرحلة الأسئلة',
+);
+ok(
+  pending.body?.pending?.stale === false,
+  'مسودة جديدة مش قديمة',
+);
 
 // ════════════════════════════════════════════════
 console.log('\n═══ 4. الإجابات → الخطة ═══');
@@ -210,6 +226,36 @@ ok(tasks.status === 200, '/tasks بيرد');
 
 console.log(
   `     (${(tasks.body?.tasks ?? []).length} مهمة — الرحلة لسه مسودة لحد ما تتعتمد)`,
+);
+
+// ════════════════════════════════════════════════
+console.log('\n═══ 8. رفض المسودة ═══');
+
+/**
+ * ️ لازم يكون فيه «مش عايز الحلم ده». من غيرها المسودة بتفضل
+ *    تظهر كل مرة يفتح التطبيق، والتذكير اللي مالوش زرار رفض
+ *    بيتحوّل مضايقة.
+ */
+const second = await call('POST', '/goals/dream', {
+  token,
+  body: { title: 'حلم تاني هرفضه' },
+});
+ok(second.status === 201, 'حلم تاني اتعمل');
+
+const before = await call('GET', '/goals/dream/pending', { token });
+ok(!!before.body?.pending, 'المسودة الجديدة ظاهرة للاستئناف');
+
+const discarded = await call('DELETE', '/goals/dream/pending', { token });
+ok(discarded.status === 200, 'الرفض نجح', `HTTP ${discarded.status}`);
+
+const afterDiscard = await call('GET', '/goals/dream/pending', { token });
+ok(afterDiscard.body?.pending === null, 'المسودة اتمسحت خلاص');
+
+/** ️ الأهم: الرفض ما يمسّش الأهداف المعتمدة */
+const stillThere = await call('GET', '/goals', { token });
+ok(
+  (stillThere.body?.goals ?? []).length > 0,
+  'الهدف المعتمد لسه موجود بعد رفض المسودة',
 );
 
 console.log(`\n  ✅ ${pass} نجح   ❌ ${fail} فشل\n`);

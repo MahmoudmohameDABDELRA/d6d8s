@@ -199,6 +199,83 @@ export const createDream = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * 1ب) استئناف مسودة معلّقة — `GET /goals/dream/pending`
+ *
+ * ️ الثغرة اللي بيقفلها:
+ *
+ *  `listGoals` بيفلتر `draft: false` في **كل** الفلاتر، يعني
+ *  المسودة مش ظاهرة في أي قايمة. والمعالج فيه ٣ نداءات AI كل
+ *  واحد ممكن ياخد ٢٥ ثانية — احتمال إن المستخدم يقفل التطبيق
+ *  في النص كبير جداً.
+ *
+ *  النتيجة كانت: الحلم اللي كتبه والخطة اللي اتولدت **بيضيعوا
+ *  نهائياً**. مفيش أي مسار يرجّعهم، والمستخدم لازم يبدأ من الأول
+ *  — واللي بيحصل عملياً إنه مش بيبدأ تاني.
+ *
+ *  ️ إخفاء المسودة عن القوايم **قرار صح** ومش هنغيّره: الجبل
+ *    نصف المبني مش هدف، وعرضه في شاشة الأهداف بيلخبط. المسار
+ *    ده منفصل عشان التطبيق يسأل عنه صراحةً عند الفتح.
+ *
+ *  الأسئلة نفسها مش متخزّنة (بتترجع وخلاص)، فالاستئناف بيرجّع
+ *  المستخدم لأقرب نقطة ممكنة:
+ *    · فيه خطوات؟ → مرحلة عرض الخطة (جاهزة للموافقة)
+ *    · مفيش؟      → مرحلة الأسئلة بعنوان حلمه محفوظ
+ */
+export const getPendingDream = asyncHandler(async (req, res) => {
+  const draft = await prisma.goal.findFirst({
+    where: { userId: req.user.userId, draft: true },
+    orderBy: { createdAt: 'desc' },
+    include: {
+      steps: {
+        orderBy: { order: 'asc' },
+        select: { id: true, title: true, description: true, order: true },
+      },
+    },
+  });
+
+  if (!draft) {
+    return res.json({ success: true, pending: null });
+  }
+
+  /**
+   * ️ المسودة القديمة جداً مش استئناف — دي نسيان.
+   *
+   *    لو المستخدم ساب حلم من أسبوع، عرضه عليه دلوقتي بيبقى
+   *    مقاطعة مش مساعدة. بنرجّعها كـ`stale` والتطبيق يقرر:
+   *    يعرضها بلطف أو يتجاهلها.
+   */
+  const ageHours = (Date.now() - new Date(draft.createdAt).getTime()) / 3_600_000;
+
+  res.json({
+    success: true,
+    pending: {
+      id: draft.id,
+      title: draft.title,
+      createdAt: draft.createdAt,
+      steps: draft.steps,
+      /** فيه خطة جاهزة؟ يبقى ناقص الموافقة بس */
+      hasPlan: draft.steps.length > 0,
+      stale: ageHours > 24,
+    },
+  });
+});
+
+/**
+ * حذف مسودة معلّقة — `DELETE /goals/dream/pending`
+ *
+ * ️ لازم يكون فيه طريقة يقول بيها «مش عايز الحلم ده».
+ *    من غيرها المسودة بتفضل تظهر كل مرة يفتح التطبيق —
+ *    والتذكير اللي مالوش زرار رفض بيتحوّل مضايقة.
+ */
+export const discardPendingDream = asyncHandler(async (req, res) => {
+  const deleted = await prisma.goal.deleteMany({
+    where: { userId: req.user.userId, draft: true },
+  });
+
+  res.json({ success: true, discarded: deleted.count });
+});
+
 /** 2) الإجابات → خطة الجبل (تُخزَّن كخطوات على المسودة) */
 export const answerDreamQuiz = asyncHandler(async (req, res) => {
   const { id } = req.params;

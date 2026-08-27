@@ -26,6 +26,16 @@ class _MountainHomeScreenState extends State<MountainHomeScreen> {
   bool _loading = true;
   String? _error;
 
+  /// ️ حلم اتساب في النص.
+  ///
+  ///    معالج الحلم فيه ٣ نداءات AI كل واحد لحد ٢٥ ثانية، فاحتمال
+  ///    إن المستخدم يقفل التطبيق في النص كبير. والمسودة **مخفية
+  ///    عن كل القوايم** (وده قرار صح — جبل نص مبني مش هدف).
+  ///
+  ///    النتيجة كانت إن الحلم بيضيع نهائي. الكارت ده هو الطريق
+  ///    الوحيد للرجوع ليه.
+  Map<String, dynamic>? _pendingDream;
+
   Goal? get _activeGoal {
     for (final g in _goals) {
       if (g.isActive && g.completedAt == null) return g;
@@ -45,13 +55,30 @@ class _MountainHomeScreenState extends State<MountainHomeScreen> {
       _error = null;
     });
     try {
-      final res = await ApiClient.instance.get(ApiEndpoints.goals);
+      /// الاتنين على التوازي — المسودة مش شرط للعرض
+      final results = await Future.wait([
+        ApiClient.instance.get(ApiEndpoints.goals),
+        ApiClient.instance
+            .get(ApiEndpoints.dreamPending)
+            .catchError((_) => <String, dynamic>{}),
+      ]);
+
+      final res = results[0];
+      final pending = (results[1]['pending'] as Map?)?.cast<String, dynamic>();
       final list = res['goals'] as List? ?? [];
+
+      if (!mounted) return;
       setState(() {
         _goals = list
             .whereType<Map<String, dynamic>>()
             .map(Goal.fromJson)
             .toList();
+
+        /// ️ المسودة الأقدم من ٢٤ ساعة مش استئناف — دي نسيان.
+        ///    عرضها بعد أسبوع بيبقى مقاطعة مش مساعدة، فبنتجاهلها.
+        _pendingDream = (pending != null && pending['stale'] != true)
+            ? pending
+            : null;
         _loading = false;
       });
     } catch (e) {
@@ -59,6 +86,110 @@ class _MountainHomeScreenState extends State<MountainHomeScreen> {
         _error = humanError(e, fallback: 'مقدرناش نجيب أهدافك');
         _loading = false;
       });
+    }
+  }
+
+  /// 🌱 كارت «كمّل حلمك»
+  ///
+  /// ️ ليه فوق كل حاجة: المستخدم اللي وصل لهنا كتب حلمه فعلاً
+  ///    وقطع نص الطريق. ده أقرب شخص لبناء جبله — وأسهل واحد
+  ///    نخسره لو مالقاش طريق رجوع.
+  Widget _resumeCard(BalColors c) {
+    final d = _pendingDream!;
+    final hasPlan = d['hasPlan'] == true;
+    final title = (d['title'] ?? '').toString();
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppTheme.spaceXl,
+        AppTheme.spaceMd,
+        AppTheme.spaceXl,
+        0,
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(AppTheme.spaceLg),
+        decoration: BoxDecoration(
+          color: c.accent.withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+          border: Border.all(color: c.accent.withValues(alpha: 0.4)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.bookmark_rounded, color: c.accent, size: 20),
+                const SizedBox(width: AppTheme.spaceSm),
+                Expanded(
+                  child: Text(
+                    hasPlan ? 'خطتك جاهزة ومستنية موافقتك' : 'حلم سايبه في النص',
+                    style: TextStyle(
+                      fontSize: BalType.body,
+                      fontWeight: FontWeight.w700,
+                      color: c.text,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              '«$title»',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: BalType.small,
+                color: c.textSecondary,
+              ),
+            ),
+            const SizedBox(height: AppTheme.spaceMd),
+            Row(
+              children: [
+                Expanded(
+                  child: PillButton(
+                    label: hasPlan ? 'شوف الخطة' : 'كمّل',
+                    icon: Icons.arrow_back_rounded,
+                    onPressed: () => Navigator.of(context)
+                        .push(MaterialPageRoute(
+                          builder: (_) => const DreamSetupScreen(),
+                        ))
+                        .then((_) => _load()),
+                  ),
+                ),
+                const SizedBox(width: AppTheme.spaceSm),
+
+                /// ️ لازم يكون فيه «مش عايزه». التذكير اللي مالوش
+                ///    زرار رفض بيتحوّل مضايقة بعد تالت مرة.
+                TextButton(
+                  onPressed: _discardDream,
+                  style: TextButton.styleFrom(
+                    minimumSize: const Size(0, 48),
+                  ),
+                  child: Text(
+                    'مش عايزه',
+                    style: TextStyle(
+                      fontSize: BalType.small,
+                      color: c.textSecondary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _discardDream() async {
+    //  تفاؤلي: الكارت يختفي فوراً
+    setState(() => _pendingDream = null);
+    try {
+      await ApiClient.instance.delete(ApiEndpoints.dreamPending);
+    } catch (_) {
+      /// الفشل هنا مش محتاج رسالة: الكارت هيرجع في التحميل الجاي
+      /// والمستخدم يقدر يضغط تاني. إزعاجه بخطأ على حاجة ثانوية
+      /// أسوأ من إعادة المحاولة الصامتة.
     }
   }
 
@@ -75,6 +206,11 @@ class _MountainHomeScreenState extends State<MountainHomeScreen> {
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
               SliverToBoxAdapter(child: _header(context, c)),
+
+              //  كارت استئناف الحلم — فوق كل حاجة
+              if (!_loading && _pendingDream != null)
+                SliverToBoxAdapter(child: _resumeCard(c)),
+
               if (_loading)
                 const SliverFillRemaining(
                   hasScrollBody: false,

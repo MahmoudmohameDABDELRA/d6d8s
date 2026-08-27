@@ -8,6 +8,8 @@ import {
   completeGoal,
   completeGoalStep,
   createDream,
+  getPendingDream,
+  discardPendingDream,
   createGoal,
   deleteGoal,
   documentWeek,
@@ -37,6 +39,13 @@ router.get('/future-notes', getDueFutureNotes);
 
 // ── جبل الأهداف (الرؤية الجديدة «بال») — قبل /:id حتى لا يبتلعها ──
 router.post('/dream', createDream);
+
+/**
+ * ️ لازم **قبل** `/dream/:id/...` — غير كده Express هيفسّر
+ *    «pending» كأنها قيمة الـ id.
+ */
+router.get('/dream/pending', getPendingDream);
+router.delete('/dream/pending', discardPendingDream);
 router.post('/dream/:id/answers', answerDreamQuiz);
 router.post('/dream/:id/approve', approveDreamPlan);
 router.post('/dream/:goalId/steps/:stepId/complete', completeGoalStep);

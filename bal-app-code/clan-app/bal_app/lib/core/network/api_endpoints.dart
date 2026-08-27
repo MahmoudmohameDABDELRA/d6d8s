@@ -60,6 +60,8 @@ abstract final class ApiEndpoints {
   static const dream = '/goals/dream';
   static String dreamAnswers(String id) => '/goals/dream/$id/answers';
   static String dreamApprove(String id) => '/goals/dream/$id/approve';
+  /// استئناف حلم اتساب في النص — من غيره بيضيع نهائي
+  static const dreamPending = '/goals/dream/pending';
   static String stepJourney(String stepId) => '/goals/steps/$stepId/journey';
   static String stepJourneyApprove(String stepId) =>
       '/goals/steps/$stepId/journey/approve';
