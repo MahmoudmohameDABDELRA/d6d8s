@@ -202,3 +202,44 @@ test('كل الشاشات بتحترم حواف الشاشة', () => {
     }
   }
 });
+
+// ════════════════════════════════════════════════
+test('الشاشة الفاضية فيها فعل مش شرح بس', () => {
+  /**
+   * ️ القاعدة من كل تطبيق محترم:
+   *
+   *  الشاشة الفاضية هي **أول درس** للمستخدم الجديد، مش رسالة
+   *  اعتذار. لو شرحت ومحطتش زرار، بتسيبه في طريق مسدود: فهم،
+   *  وبعدين؟ لازم يقفل ويدوّر على الزرار في مكان تاني — ونسبة
+   *  كبيرة مبتعملش كده، بتقفل التطبيق.
+   *
+   *  ️ استثناء واحد مقصود: شاشة المحادثة. حقل الكتابة تحت
+   *    الشاشة الفاضية على طول، فالفعل موجود أصلاً وواضح.
+   */
+  const EXEMPT = ['screens/chat/conversation_screen.dart'];
+
+  const ACTIONS = /PillButton|OutlinePillButton|TextButton|ElevatedButton/;
+
+  const offenders = [];
+
+  for (const file of SCREENS) {
+    const rel = relative(APP, file).replace(/\\/g, '/').replace('lib/', '');
+    if (EXEMPT.some((e) => rel.endsWith(e))) continue;
+
+    const src = readFileSync(file, 'utf8');
+    const start = src.indexOf('Widget _emptyView');
+    if (start < 0) continue;
+
+    //  لحد بداية الدالة اللي بعدها
+    const next = src.indexOf('\n  Widget ', start + 10);
+    const block = src.slice(start, next > 0 ? next : undefined);
+
+    if (!ACTIONS.test(block)) offenders.push(rel);
+  }
+
+  assert.deepEqual(
+    offenders,
+    [],
+    'شاشة فاضية بتشرح ومفيهاش زرار — المستخدم هيعمل إيه؟',
+  );
+});

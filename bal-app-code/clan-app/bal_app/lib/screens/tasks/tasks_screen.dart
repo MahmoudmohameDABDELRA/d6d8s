@@ -10,6 +10,7 @@ import '../../models/models.dart';
 import '../../widgets/buttons.dart';
 import '../../widgets/progress_ring.dart';
 import '../../widgets/task_check.dart';
+import '../mountain/dream_setup_screen.dart';
 import '../../widgets/skeleton.dart';
 
 /// ✅ شاشة المهام — القائمة الحية (مولدة من الجبل + يدوية)
@@ -308,10 +309,94 @@ class _TasksScreenState extends State<TasksScreen> {
             Text('لو مثبّت جبلك، مهام النهاردة بتنزل هنا لوحدها كل يوم — وتقدر تضيف مهامك براحتك',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: c.textSecondary)),
+
+            /// ️ **الشاشة الفاضية لازم يكون فيها فعل.**
+            ///
+            ///    الشاشة اللي بتشرح ومفيهاش زرار بتسيب المستخدم
+            ///    في طريق مسدود: فهم، وبعدين؟ لازم يقفل ويدوّر
+            ///    على الزرار في مكان تاني — ونسبة كبيرة مبتعملش
+            ///    كده، بتقفل التطبيق.
+            ///
+            ///    القاعدة من كل تطبيق محترم: الشاشة الفاضية هي
+            ///    **أول درس** للمستخدم الجديد، مش رسالة اعتذار.
+            ///    فيها فعلين: الأساسي (ابدأ جبلك) والثانوي
+            ///    (ضيف مهمة دلوقتي).
+            const SizedBox(height: AppTheme.spaceXxl),
+            PillButton(
+              label: 'ابدأ جبلك',
+              icon: Icons.terrain_rounded,
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const DreamSetupScreen()),
+              ),
+            ),
+            const SizedBox(height: AppTheme.spaceSm),
+            TextButton.icon(
+              onPressed: _addQuickTask,
+              icon: Icon(Icons.add_rounded, size: 18, color: c.textSecondary),
+              label: Text(
+                'أو ضيف مهمة دلوقتي',
+                style: TextStyle(
+                  fontSize: BalType.small,
+                  color: c.textSecondary,
+                ),
+              ),
+              style: TextButton.styleFrom(minimumSize: const Size(0, 48)),
+            ),
           ],
         ),
       ),
     );
+  }
+
+  /// إضافة سريعة — سطر واحد، بلا شاشة كاملة
+  ///
+  /// ️ الاحتكاك هنا عدو: المستخدم اللي جاي يكتب «أذاكر ساعة»
+  ///    ما ينفعش يعدّي على شاشة فيها ٦ حقول. الحقول التانية
+  ///    ليها قيم افتراضية معقولة، ويقدر يعدّلها بعدين.
+  Future<void> _addQuickTask() async {
+    final ctrl = TextEditingController();
+    final c = BalColors(context);
+
+    final title = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: c.surfaceElevated,
+        title: Text('مهمة جديدة',
+            style: Theme.of(ctx).textTheme.titleMedium),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          textInputAction: TextInputAction.done,
+          onSubmitted: (v) => Navigator.of(ctx).pop(v),
+          decoration: const InputDecoration(hintText: 'أعمل إيه؟'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('إلغاء'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(ctrl.text),
+            child: const Text('ضيف'),
+          ),
+        ],
+      ),
+    );
+
+    if (title == null || title.trim().isEmpty) return;
+
+    try {
+      await ApiClient.instance.post(
+        ApiEndpoints.tasks,
+        body: {'title': title.trim()},
+      );
+      await _load();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(humanError(e, fallback: 'مقدرناش نضيفها'))),
+      );
+    }
   }
 }
 

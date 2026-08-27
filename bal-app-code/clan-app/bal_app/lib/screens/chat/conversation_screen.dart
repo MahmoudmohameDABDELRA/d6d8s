@@ -10,6 +10,7 @@ import '../../core/network/api_error.dart';
 import '../../core/network/api_endpoints.dart';
 import '../../core/storage/token_store.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/time_ago.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/models.dart';
 import '../../widgets/buttons.dart';
@@ -563,9 +564,82 @@ class _ConversationScreenState extends State<ConversationScreen> {
             ),
           );
         }
-        final m = _messages[_hasMore ? i - 1 : i];
-        return _bubble(c, m);
+        final index = _hasMore ? i - 1 : i;
+        final m = _messages[index];
+
+        /// ️ فاصل التاريخ.
+        ///
+        ///    كل تطبيق رسايل بيحطه (واتساب، تيليجرام، سيجنال)
+        ///    ومش صدفة: من غيره الرسايل بتبقى حبل واحد متصل،
+        ///    والمستخدم مايعرفش إن الرسالة دي من امبارح ولا من
+        ///    شهر. الوقت جنب الفقاعة بيقول «14:32» — بس ١٤:٣٢
+        ///    بتاعة أنهي يوم؟
+        final prev = index > 0 ? _messages[index - 1] : null;
+        final showDivider = _needsDateDivider(prev, m);
+
+        if (!showDivider) return _bubble(c, m);
+
+        return Column(
+          children: [
+            _dateDivider(c, m.createdAt!),
+            _bubble(c, m),
+          ],
+        );
       },
+    );
+  }
+
+  /// هل الرسالة دي في يوم جديد؟
+  bool _needsDateDivider(ChatMessage? prev, ChatMessage current) {
+    final at = current.createdAt;
+    if (at == null) return false;
+
+    //  أول رسالة في القايمة دايماً ليها فاصل
+    if (prev?.createdAt == null) return true;
+
+    final a = prev!.createdAt!.toLocal();
+    final b = at.toLocal();
+
+    /// ️ مقارنة بالتاريخ مش بفرق الساعات — رسالتين بينهم ٢٠
+    ///    دقيقة ممكن يكونوا في يومين مختلفين لو حواليهم نص الليل.
+    return a.year != b.year || a.month != b.month || a.day != b.day;
+  }
+
+  Widget _dateDivider(BalColors c, DateTime at) {
+    final local = at.toLocal();
+    final now = DateTime.now();
+
+    final today = DateTime(now.year, now.month, now.day);
+    final day = DateTime(local.year, local.month, local.day);
+    final diff = today.difference(day).inDays;
+
+    final label = switch (diff) {
+      0 => 'النهاردة',
+      1 => 'امبارح',
+      _ => TimeAgo.forList(at),
+    };
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppTheme.spaceMd),
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppTheme.spaceMd,
+            vertical: 4,
+          ),
+          decoration: BoxDecoration(
+            color: c.surfaceElevated.withValues(alpha: 0.85),
+            borderRadius: BorderRadius.circular(AppTheme.radiusPill),
+          ),
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: c.textSecondary,
+                  fontWeight: FontWeight.w600,
+                ),
+          ),
+        ),
+      ),
     );
   }
 

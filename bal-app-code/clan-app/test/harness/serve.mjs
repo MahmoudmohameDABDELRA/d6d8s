@@ -8,6 +8,22 @@ process.env.JWT_ACCESS_SECRET ??= 'harness-access-secret-long-enough-0000';
 process.env.JWT_REFRESH_SECRET ??= 'harness-refresh-secret-long-enough-11';
 process.env.ENABLE_EMAIL_AUTH = 'true';
 process.env.NODE_ENV = 'development';
+
+/**
+ * ️ رفع حدود المعدّل للفحص — وليه مش تعديل في كود الإنتاج:
+ *
+ *  الحدود (١٠ تسجيلات كل ١٥ دقيقة) **صح تماماً** للإنتاج: من
+ *  غيرها أي حد يعمل آلاف الحسابات. المشكلة إن الفحوص بتعمل
+ *  عشرات المستخدمين في ثواني، فبتستهلك الحد وترجع 429 —
+ *  والفحص بيفشل لسبب مالوش علاقة بالكود اللي بنفحصه.
+ *
+ *  ده ضيّع وقت أكتر من مرة: probe يرجع كله أحمر، وأول ما
+ *  السيرفر يترستارت يرجع كله أخضر. الرقم اللي بيتغيّر مع
+ *  إعادة التشغيل مش نتيجة فحص.
+ *
+ *  `RATE_LIMIT_RELAXED` بيتقرا في app.js وبيرفع الحد للفحص بس.
+ */
+process.env.RATE_LIMIT_RELAXED = '1';
 process.env.LOG_LEVEL ??= 'silent';
 process.env.PORT ??= '3999';
 

@@ -3,6 +3,7 @@ import '../../core/network/api_client.dart';
 import '../../core/network/api_error.dart';
 import '../../core/network/api_endpoints.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/time_ago.dart';
 import '../../core/theme/app_theme.dart';
 import '../../widgets/buttons.dart';
 import '../../widgets/glass_card.dart';
@@ -391,24 +392,54 @@ class _ChatScreenState extends State<ChatScreen> {
                 ],
               ),
             ),
-            /// عداد غير المقروء — السيرفر بيحسبه وماكانش بيتعرض
-            if (conv.unread > 0)
-              Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: AppTheme.spaceSm, vertical: 2.5),
-                decoration: BoxDecoration(
-                  color: c.primary,
-                  borderRadius: BorderRadius.circular(AppTheme.radiusPill),
-                ),
-                child: Text(
-                  '${conv.unread}',
-                  style: TextStyle(
-                    fontSize: BalType.caption,
-                    fontWeight: FontWeight.w700,
-                    color: c.onPrimary,
+            /// ️ العمود ده = وقت آخر رسالة + عدّاد غير المقروء.
+            ///
+            ///    الوقت كان **بيجي من السيرفر وبيتقرا في المودل
+            ///    ومبيتعرضش**. أي تطبيق رسايل بيعرضه (واتساب،
+            ///    تيليجرام، سيجنال) — من غيره القايمة مالهاش
+            ///    إحساس بالزمن، والمستخدم مايعرفش إن دي محادثة
+            ///    من شهر ولا من خمس دقايق.
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (conv.lastMessageAt != null)
+                  Text(
+                    TimeAgo.forList(conv.lastMessageAt),
+                    style: TextStyle(
+                      fontSize: BalType.caption,
+                      //  الوقت بيتلوّن لما يبقى فيه جديد
+                      color: conv.unread > 0 ? c.primary : c.textDisabled,
+                      fontWeight: conv.unread > 0
+                          ? FontWeight.w600
+                          : FontWeight.w400,
+                    ),
                   ),
-                ),
-              ),
+                if (conv.unread > 0) ...[
+                  const SizedBox(height: 5),
+                  Container(
+                    constraints: const BoxConstraints(minWidth: 20),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 6, vertical: 2.5),
+                    decoration: BoxDecoration(
+                      color: c.primary,
+                      borderRadius:
+                          BorderRadius.circular(AppTheme.radiusPill),
+                    ),
+                    child: Text(
+                      //  فوق ٩٩ بيبقى «+99» — الرقم الطويل بيكسر الصف
+                      conv.unread > 99 ? '+99' : '${conv.unread}',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: BalType.caption,
+                        fontWeight: FontWeight.w700,
+                        color: c.onPrimary,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
           ],
         ),
       ),

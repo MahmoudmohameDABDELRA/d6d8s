@@ -203,9 +203,23 @@ app.get('/health/live', (req, res) => {
   res.json({ status: 'alive', uptime: process.uptime() });
 });
 
+/**
+ * ️ `RATE_LIMIT_RELAXED` للفحص الآلي بس.
+ *
+ *    الحدود دي صح للإنتاج ومش المفروض تتغيّر. لكن الفحوص
+ *    بتعمل عشرات الحسابات في ثواني، فكانت بتستهلك الحد
+ *    وترجع 429 — وده فشل مالوش علاقة بالكود اللي بيتفحص.
+ *
+ *    ️ الحارس مزدوج: لازم المتغيّر **و** إننا مش في إنتاج.
+ *      حتى لو المتغيّر اتسرّب لسيرفر حقيقي، الحد بيفضل شغّال.
+ */
+const limitsRelaxed =
+  process.env.NODE_ENV === 'test' ||
+  (process.env.RATE_LIMIT_RELAXED === '1' && !env.isProduction);
+
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, //  كان 15 *60* 1000 (تلف Markdown)
-  max: process.env.NODE_ENV === 'test' ? 100_000 : 100,
+  max: limitsRelaxed ? 100_000 : 100,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   message: { success: false, message: 'عدد الطلبات كبير جداً، حاول لاحقاً' },
@@ -213,7 +227,7 @@ const apiLimiter = rateLimit({
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: process.env.NODE_ENV === 'test' ? 100_000 : 10,
+  max: limitsRelaxed ? 100_000 : 10,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   skipSuccessfulRequests: true, // لا نعاقب المستخدم على تسجيل دخول ناجح
