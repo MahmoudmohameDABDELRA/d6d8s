@@ -104,6 +104,18 @@ abstract final class ApiEndpoints {
   static const clanChats = '/chat/clans';
   static const chatRequests = '/chat/requests';
   static String chatMessages(String convId) => '/chat/$convId/messages';
+  // ── تعديل الرسايل والتفاعل والإبلاغ ──
+  static String editMessage(String messageId) => '/chat/messages/$messageId';
+  static String deleteMessage(String messageId) => '/chat/messages/$messageId';
+  static String reactToMessage(String messageId) =>
+      '/chat/messages/$messageId/react';
+  static String reportMessage(String messageId) =>
+      '/chat/messages/$messageId/report';
+  static String reportAndBlockMessage(String messageId) =>
+      '/chat/messages/$messageId/report-and-block';
+  static const blockUser = '/chat/block';
+  static String unblockUser(String userId) => '/chat/block/$userId';
+  static const blockedUsers = '/chat/blocked';
   static String openClanChat(String clanId) => '/chat/clans/$clanId/open';
   static String respondRequest(String id) => '/chat/requests/$id/respond';
   static const friendRequests = '/social/friends/requests';

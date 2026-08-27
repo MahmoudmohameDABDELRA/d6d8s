@@ -56,7 +56,8 @@
     "routes:dump": "node --import ./test/harness/setup.mjs test/harness/routes-dump.mjs",
     "harness": "node --import ./test/harness/setup.mjs test/harness/serve.mjs",
     "e2e": "node test/harness/e2e.mjs",
-    "probe": "node --import ./test/harness/setup.mjs test/harness/task-notify-probe.mjs && node --import ./test/harness/setup.mjs test/harness/focus-probe.mjs && node --import ./test/harness/setup.mjs test/harness/push-probe.mjs"
+    "probe": "node --import ./test/harness/setup.mjs test/harness/task-notify-probe.mjs && node --import ./test/harness/setup.mjs test/harness/focus-probe.mjs && node --import ./test/harness/setup.mjs test/harness/push-probe.mjs",
+    "probe:chat": "node test/harness/chat-probe.mjs"
   },
   "prisma": {
     "schema": "prisma/schema.prisma",

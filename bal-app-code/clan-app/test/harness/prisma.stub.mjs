@@ -66,6 +66,13 @@ const withDefaults = (name, data) => {
 const rows = (m) => { if (!db.has(m)) db.set(m, []); return db.get(m); };
 
 /** العلاقات اللي اسم جدولها مش مجرد صيغة المفرد */
+/**
+ * ️ `participants` غامضة: `Conversation.participants` بتروح
+ *    لـ `conversationParticipant` و`FocusChallenge.participants`
+ *    بتروح لـ `focusChallengeParticipant`. الخريطة المسطّحة
+ *    مبتعرفش تفرّق، فالكتابة المتداخلة بتحتاج سياق الأب —
+ *    شوف NESTED_TABLE تحت.
+ */
 const RELATION_TABLE = {
   participants: 'focusChallengeParticipant',
   players: 'gameRoomPlayer',
@@ -75,6 +82,15 @@ const RELATION_TABLE = {
   messages: 'message',
   notifications: 'notification',
   tasks: 'task',
+};
+
+/**
+ * أسماء علاقات مش في RELATION_TABLE — بتستخدمها فلترة `some`.
+ * ️ `participants` هنا بتروح لمحادثة لأن ده الاستخدام الوحيد
+ *    في فلترة العلاقات (`findDirectConversation`).
+ */
+const NESTED_LOOKUP = {
+  participants: 'conversationParticipant',
 };
 
 const matches = (row, where = {}) => {
@@ -93,6 +109,59 @@ const matches = (row, where = {}) => {
         let cur = row[k];
         for (const seg of v.path) cur = cur?.[seg];
         if (cur !== v.equals) return false;
+        continue;
+      }
+      /**
+       * ️ فلترة بعلاقة: `participants: { some: { userId: x } }`
+       *
+       *  الستَب القديم كان بيتجاهلها تماماً (بيوصل لـ `continue`
+       *  في الآخر). النتيجة إن `findDirectConversation` كان
+       *  بيرجّع **أول محادثة في الجدول** أياً كانت، حتى لو
+       *  المستخدمين دول مش فيها. فالتطبيق كان بيبعت رسايل
+       *  لمحادثة غريبة ويقع بـ 403 — وهو سليم تماماً.
+       *
+       *  بنحلّها بنفس منطق العلاقات في hydrate: أي حقل ينتهي
+       *  بـ Id وقيمته = معرّف الصف الأب.
+       */
+      if ('some' in v || 'every' in v || 'none' in v) {
+        const table = RELATION_TABLE[k] ?? NESTED_LOOKUP[k] ?? k;
+        const kids = (db.get(table) ?? []).filter((kid) =>
+          Object.entries(kid).some(
+            ([key, val]) => key.endsWith('Id') && val === row.id,
+          ),
+        );
+
+        if ('some' in v && !kids.some((kid) => matches(kid, v.some))) return false;
+        if ('every' in v && !kids.every((kid) => matches(kid, v.every))) return false;
+        if ('none' in v && kids.some((kid) => matches(kid, v.none))) return false;
+        continue;
+      }
+      /**
+       * ️ مقارنات النطاق — `gte`, `lt`, `gt`, `lte`
+       *
+       *  دي كانت **مفقودة تماماً** والستَب كان بيعدّي عليها
+       *  بـ `continue`. يعني `createdAt: { lt: X }` كان بيتجاهَل
+       *  ويرجّع كل الصفوف. أثرها أوسع من الشات بكتير: كل استعلام
+       *  «النهاردة» (`startedAt >= todayStart`) كان بيرجّع كل
+       *  السجل، فأي فحص لمهام اليوم أو حدود التاريخ كان **بيعدّي
+       *  وهو مش بيفحص حاجة**.
+       *
+       *  بنحوّل للأرقام عشان المقارنة تشتغل على التواريخ والنصوص
+       *  والأرقام بنفس الكود.
+       */
+      const RANGE = ['gte', 'gt', 'lte', 'lt'];
+      if (RANGE.some((op2) => op2 in v)) {
+        const norm = (x) => (x instanceof Date ? x.getTime()
+          : typeof x === 'string' && !Number.isNaN(Date.parse(x)) ? Date.parse(x)
+          : x);
+
+        const actual = norm(row[k]);
+        if (actual === undefined || actual === null) return false;
+
+        if ('gte' in v && !(actual >= norm(v.gte))) return false;
+        if ('gt'  in v && !(actual >  norm(v.gt)))  return false;
+        if ('lte' in v && !(actual <= norm(v.lte))) return false;
+        if ('lt'  in v && !(actual <  norm(v.lt)))  return false;
         continue;
       }
       if ('in' in v)     { if (!v.in.includes(row[k])) return false; continue; }
@@ -116,6 +185,97 @@ const uniqueWhere = (where = {}) => {
     else out[k] = v;
   }
   return out;
+};
+
+
+/**
+ * ═══════════════════════════════════════════════════════════
+ *  الكتابة المتداخلة — nested writes
+ *
+ *  ️ ليه اتضافت:
+ *
+ *  `createDirectConversation` بيكتب كده:
+ *
+ *      prisma.conversation.create({
+ *        data: {
+ *          type: 'DIRECT',
+ *          participants: { create: [{ userId: a }, { userId: b }] },
+ *        },
+ *      })
+ *
+ *  الستَب القديم كان بيحفظ `participants` كـ **حقل خام** على صف
+ *  المحادثة، ومكانش بيعمل صفوف في `conversationParticipant`
+ *  خالص. النتيجة إن `assertAccess` كان بيدوّر على المشارك
+ *  وميلاقيهوش، فيرمي «أنت لست في هذه المحادثة» — والشات كله
+ *  كان مستحيل يتفحص.
+ *
+ *  ️ ده كان **نقص في أداة الفحص**، مش باج في التطبيق. الفرق
+ *    مهم: لو صدّقنا الستَب كنا هنروح نصلّح كود سليم.
+ * ═══════════════════════════════════════════════════════════
+ */
+
+/** اسم الجدول للعلاقة، حسب الأب — `participants` غامضة لوحدها */
+const NESTED_TABLE = {
+  conversation: { participants: 'conversationParticipant' },
+  focusChallenge: { participants: 'focusChallengeParticipant' },
+  gameRoom: { players: 'gameRoomPlayer' },
+  clan: { members: 'clanMember' },
+  goal: { steps: 'goalStep' },
+  journey: { days: 'journeyDay' },
+};
+
+/** المفتاح الأجنبي اللي بيربط الابن بالأب */
+const FOREIGN_KEY = {
+  conversationParticipant: 'conversationId',
+  focusChallengeParticipant: 'challengeId',
+  gameRoomPlayer: 'roomId',
+  clanMember: 'clanId',
+  goalStep: 'goalId',
+  journeyDay: 'journeyId',
+};
+
+/** يفصل الحقول العادية عن الكتابات المتداخلة */
+const splitNested = (data) => {
+  const scalars = {};
+  const nested = {};
+
+  for (const [k, v] of Object.entries(data)) {
+    const isNested =
+      v && typeof v === 'object' && !Array.isArray(v) && !(v instanceof Date) &&
+      ('create' in v || 'createMany' in v || 'connectOrCreate' in v);
+
+    if (isNested) nested[k] = v;
+    else scalars[k] = v;
+  }
+  return { scalars, nested };
+};
+
+/** ينفّذ الكتابات المتداخلة كصفوف حقيقية في جداولها */
+const applyNested = (parentName, parentRow, nested) => {
+  for (const [rel, spec] of Object.entries(nested)) {
+    const table =
+      NESTED_TABLE[parentName]?.[rel] ?? RELATION_TABLE[rel] ?? rel;
+    const fk = FOREIGN_KEY[table] ?? `${parentName}Id`;
+
+    let items = spec.create ?? spec.createMany?.data ?? spec.connectOrCreate;
+    if (!items) continue;
+    if (!Array.isArray(items)) items = [items];
+
+    const childList = rows(table);
+    for (const item of items) {
+      const payload = item.create ?? item;
+      const inner = splitNested(payload);
+      const child = {
+        id: `${table}-${++seq}`,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        [fk]: parentRow.id,
+        ...withDefaults(table, inner.scalars),
+      };
+      childList.push(child);
+      applyNested(table, child, inner.nested);
+    }
+  }
 };
 
 const model = (name) => new Proxy({}, {
@@ -225,7 +385,40 @@ const model = (name) => new Proxy({}, {
         return out;
       };
 
-      if (op === 'findMany') return list.filter((r) => matches(r, args.where ?? {})).map(hydrate);
+      if (op === 'findMany') {
+        /**
+         * ️ الترتيب والقص لازم يتطبّقوا فعلاً.
+         *
+         *  الستَب القديم كان بيرجّع **كل** الصفوف ويتجاهل
+         *  `orderBy` و`take` و`skip`. النتيجة إن أي اختبار
+         *  لترقيم الصفحات كان بيعدّي وهو مش بيفحص حاجة:
+         *  `limit=20` كان بيرجّع ٥١ صف والاختبار يشوفهم
+         *  «موجودين» فيعدّي. أسوأ من مفيش اختبار — اختبار
+         *  بيدّي طمأنينة كاذبة.
+         */
+        let out = list.filter((r) => matches(r, args.where ?? {}));
+
+        const order = Array.isArray(args.orderBy) ? args.orderBy[0] : args.orderBy;
+        if (order) {
+          const [field, dir] = Object.entries(order)[0] ?? [];
+          if (field) {
+            out = [...out].sort((a, b) => {
+              const av = a[field];
+              const bv = b[field];
+              if (av === bv) return 0;
+              if (av == null) return 1;
+              if (bv == null) return -1;
+              const cmp = av > bv ? 1 : -1;
+              return dir === 'desc' ? -cmp : cmp;
+            });
+          }
+        }
+
+        if (Number.isFinite(args.skip)) out = out.slice(args.skip);
+        if (Number.isFinite(args.take)) out = out.slice(0, args.take);
+
+        return out.map(hydrate);
+      }
       if (op === 'count')    return list.filter((r) => matches(r, args.where ?? {})).length;
       if (op === 'findFirst') return hydrate(list.find((r) => matches(r, args.where ?? {})) ?? null);
       if (op === 'findUnique' || op === 'findUniqueOrThrow') {
@@ -234,12 +427,14 @@ const model = (name) => new Proxy({}, {
         return hydrate(hit ?? null);
       }
       if (op === 'create') {
+        const { scalars, nested } = splitNested(args.data ?? {});
         const row = {
           id: `${name}-${++seq}`,
           createdAt: new Date(), updatedAt: new Date(),
-          ...withDefaults(name, args.data ?? {}),
+          ...withDefaults(name, scalars),
         };
         list.push(row);
+        applyNested(name, row, nested);
         return row;
       }
       if (op === 'createMany') {
@@ -250,7 +445,10 @@ const model = (name) => new Proxy({}, {
         const w = uniqueWhere(args.where ?? {});
         let hit = list.find((r) => matches(r, w));
         if (!hit) { hit = { id: `${name}-${++seq}`, createdAt: new Date(), ...w, ...(args.create ?? {}) }; list.push(hit); }
-        Object.assign(hit, args.data ?? args.update ?? {}, { updatedAt: new Date() });
+        const payload = args.data ?? args.update ?? {};
+        const split = splitNested(payload);
+        Object.assign(hit, split.scalars, { updatedAt: new Date() });
+        applyNested(name, hit, split.nested);
         return hit;
       }
       if (op === 'updateMany') {

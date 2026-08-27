@@ -35,6 +35,9 @@ class RealtimeService extends ChangeNotifier {
   final _checkinReplyCtrl = StreamController<Map<String, dynamic>>.broadcast();
   final _tasksGeneratedCtrl = StreamController<Map<String, dynamic>>.broadcast();
   final _messageCtrl = StreamController<Map<String, dynamic>>.broadcast();
+  final _typingCtrl = StreamController<Map<String, dynamic>>.broadcast();
+  final _readCtrl = StreamController<Map<String, dynamic>>.broadcast();
+  final _presenceCtrl = StreamController<Map<String, dynamic>>.broadcast();
 
   /// إشعار جديد (اطمئنان · دعوة تحدي · تذكير)
   Stream<Map<String, dynamic>> get onNotification => _notificationCtrl.stream;
@@ -47,6 +50,15 @@ class RealtimeService extends ChangeNotifier {
 
   /// رسالة جديدة في محادثة
   Stream<Map<String, dynamic>> get onMessage => _messageCtrl.stream;
+
+  /// حد بيكتب دلوقتي — `{ userId, username, isTyping }`
+  Stream<Map<String, dynamic>> get onTyping => _typingCtrl.stream;
+
+  /// حد قرا رسالة — `{ conversationId, messageId, userId, readAt }`
+  Stream<Map<String, dynamic>> get onRead => _readCtrl.stream;
+
+  /// حد دخل أو خرج — `{ userId, isOnline }`
+  Stream<Map<String, dynamic>> get onPresence => _presenceCtrl.stream;
 
   /// يوصّل القناتين. آمن لو اتنادى أكتر من مرة.
   Future<void> connect() async {
@@ -72,6 +84,14 @@ class RealtimeService extends ChangeNotifier {
     _chat = _open('$origin/chat', token, (s) {
       s.on('new_message', (d) => _emit(_messageCtrl, d));
       s.on('message', (d) => _emit(_messageCtrl, d));
+
+      /// ️ الأحداث دي كانت موجودة في السيرفر من الأول ومحدش
+      ///    بيسمعها. `chat.socket.js` بيبعت `typing` عند الكتابة
+      ///    و`message_read` عند القراية — الشات كان أبكم رغم
+      ///    إن نصّه شغال.
+      s.on('typing', (d) => _emit(_typingCtrl, d));
+      s.on('message_read', (d) => _emit(_readCtrl, d));
+      s.on('presence_update', (d) => _emit(_presenceCtrl, d));
     });
   }
 
@@ -122,6 +142,28 @@ class RealtimeService extends ChangeNotifier {
     _chat?.emit('join_conversation', {'conversationId': conversationId});
   }
 
+  /// يخرج من غرفة محادثة — بيوقّف استقبال رسايلها
+  void leaveConversation(String conversationId) {
+    _chat?.emit('leave_conversation', {'conversationId': conversationId});
+  }
+
+  /// «بيكتب…» — بيتبعت للطرف التاني بس، مش ليّا
+  void startTyping(String conversationId) {
+    _chat?.emit('typing_start', {'conversationId': conversationId});
+  }
+
+  void stopTyping(String conversationId) {
+    _chat?.emit('typing_stop', {'conversationId': conversationId});
+  }
+
+  /// إيصال قراءة — «شافها»
+  void markMessageRead(String conversationId, String messageId) {
+    _chat?.emit('mark_read', {
+      'conversationId': conversationId,
+      'messageId': messageId,
+    });
+  }
+
   /// يعلّم إشعار كمقروء عبر السوكيت (أرخص من نداء REST)
   void markSeen(String notificationId) {
     _notifications?.emit('notification:seen', {'notificationId': notificationId});
@@ -142,6 +184,9 @@ class RealtimeService extends ChangeNotifier {
     _checkinReplyCtrl.close();
     _tasksGeneratedCtrl.close();
     _messageCtrl.close();
+    _typingCtrl.close();
+    _readCtrl.close();
+    _presenceCtrl.close();
     super.dispose();
   }
 }

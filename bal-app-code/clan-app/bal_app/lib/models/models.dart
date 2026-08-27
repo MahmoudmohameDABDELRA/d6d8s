@@ -347,6 +347,17 @@ class ChatMessage {
   final bool isDeleted;
   final bool isEdited;
 
+  /// ️ الرد على رسالة: السيرفر بيخزّنها **لقطة** مش مرجع
+  ///    (`replyToText` و`replyToSender` أعمدة مستقلة). كده الرد
+  ///    يفضل مقروء حتى لو الأصل اتمسح — وده قرار صح، فبنقراه
+  ///    زي ما هو مش بندوّر على الرسالة الأصلية في القائمة.
+  final String? replyToId;
+  final String? replyToText;
+  final String? replyToSender;
+
+  /// `[{ userId, emoji }]` — تفاعل واحد لكل مستخدم (قاعدة السيرفر)
+  final List<MessageReaction> reactions;
+
   const ChatMessage({
     required this.id,
     required this.text,
@@ -355,20 +366,83 @@ class ChatMessage {
     this.createdAt,
     this.isDeleted = false,
     this.isEdited = false,
+    this.replyToId,
+    this.replyToText,
+    this.replyToSender,
+    this.reactions = const [],
   });
 
   factory ChatMessage.fromJson(Map<String, dynamic> j) {
     final s = (j['sender'] is Map) ? j['sender'] as Map : const {};
+
+    final raw = j['reactions'];
+    final reactions = raw is List
+        ? raw
+            .whereType<Map>()
+            .map((r) => MessageReaction(
+                  userId: (r['userId'] ?? '').toString(),
+                  emoji: (r['emoji'] ?? '').toString(),
+                ))
+            .where((r) => r.emoji.isNotEmpty)
+            .toList()
+        : <MessageReaction>[];
+
     return ChatMessage(
       id: (j['id'] ?? '').toString(),
       text: (j['text'] ?? j['content'] ?? '').toString(),
       senderId: (j['senderId'] ?? s['id'] ?? '').toString(),
-      senderName: s['username']?.toString(),
+      senderName: (j['senderName'] ?? s['username'])?.toString(),
       createdAt: DateTime.tryParse((j['createdAt'] ?? '').toString()),
       isDeleted: j['isDeleted'] == true,
       isEdited: j['isEdited'] == true,
+      replyToId: j['replyToId']?.toString(),
+      replyToText: j['replyToText']?.toString(),
+      replyToSender: j['replyToSender']?.toString(),
+      reactions: reactions,
     );
   }
+
+  /// نسخة معدّلة — للتحديث المتفائل قبل ما رد السيرفر يوصل
+  ChatMessage copyWith({
+    String? text,
+    bool? isDeleted,
+    bool? isEdited,
+    List<MessageReaction>? reactions,
+  }) =>
+      ChatMessage(
+        id: id,
+        text: text ?? this.text,
+        senderId: senderId,
+        senderName: senderName,
+        createdAt: createdAt,
+        isDeleted: isDeleted ?? this.isDeleted,
+        isEdited: isEdited ?? this.isEdited,
+        replyToId: replyToId,
+        replyToText: replyToText,
+        replyToSender: replyToSender,
+        reactions: reactions ?? this.reactions,
+      );
+
+  /// التفاعلات مجمّعة: إيموجي → عدد
+  Map<String, int> get reactionCounts {
+    final out = <String, int>{};
+    for (final r in reactions) {
+      out[r.emoji] = (out[r.emoji] ?? 0) + 1;
+    }
+    return out;
+  }
+
+  /// هل أنا متفاعل بالإيموجي ده؟
+  bool reactedBy(String userId, String emoji) =>
+      reactions.any((r) => r.userId == userId && r.emoji == emoji);
+}
+
+/// تفاعل واحد على رسالة
+class MessageReaction {
+  final String userId;
+  final String emoji;
+
+  const MessageReaction({required this.userId, required this.emoji});
 }
 
 /// ⏰ منبه — بيصحّيك بمهمة لازم تحلها عشان يقفل
