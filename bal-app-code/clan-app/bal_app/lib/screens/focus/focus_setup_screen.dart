@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../core/network/api_client.dart';
+import '../../core/network/api_error.dart';
 import '../../core/network/api_endpoints.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
@@ -55,7 +56,7 @@ class _FocusSetupScreenState extends State<FocusSetupScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('فشل: ${e.toString().replaceAll('Exception: ', '')}')),
+          SnackBar(content: Text(humanError(e, fallback: 'مقدرناش نبدأ الجلسة'))),
         );
       }
     } finally {
@@ -264,7 +265,7 @@ class _FocusSessionScreenState extends State<FocusSessionScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('فشل الحفظ: ${e.toString().replaceAll('Exception: ', '')}')),
+          SnackBar(content: Text(humanError(e, fallback: 'مقدرناش نحفظ الجلسة'))),
         );
       }
     }

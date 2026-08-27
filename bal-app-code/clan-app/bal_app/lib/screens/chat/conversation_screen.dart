@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../core/network/api_client.dart';
+import '../../core/network/api_error.dart';
 import '../../core/network/api_endpoints.dart';
 import '../../core/storage/token_store.dart';
 import '../../core/theme/app_colors.dart';
@@ -98,7 +99,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
     } catch (e) {
       if (!mounted || silent) return;
       setState(() {
-        _error = e.toString().replaceAll('Exception: ', '');
+        _error = humanError(e);
         _loading = false;
       });
     }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/network/api_client.dart';
+import '../../core/network/api_error.dart';
 import '../../core/network/api_endpoints.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
@@ -52,9 +53,7 @@ class _AlarmsScreenState extends State<AlarmsScreen> {
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _error = e.toString().contains('SocketException')
-            ? 'مفيش اتصال بالسيرفر'
-            : e.toString().replaceAll('Exception: ', '');
+        _error = humanError(e, fallback: 'مقدرناش نجيب منبهاتك');
       });
     }
   }
@@ -78,7 +77,7 @@ class _AlarmsScreenState extends State<AlarmsScreen> {
     } catch (e) {
       if (!mounted) return;
       messenger.showSnackBar(
-        SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+        SnackBar(content: Text(humanError(e))),
       );
     }
   }
@@ -108,7 +107,7 @@ class _AlarmsScreenState extends State<AlarmsScreen> {
     } catch (e) {
       if (!mounted) return;
       messenger.showSnackBar(
-        SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+        SnackBar(content: Text(humanError(e))),
       );
     }
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/network/api_client.dart';
+import '../../core/network/api_error.dart';
 import '../../core/network/api_endpoints.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
@@ -81,9 +82,7 @@ class _WakeTaskScreenState extends State<WakeTaskScreen> {
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _error = e.toString().contains('SocketException')
-            ? 'مفيش اتصال — المنبه هيفضل شغال'
-            : e.toString().replaceAll('Exception: ', '');
+        _error = humanError(e, fallback: 'مقدرناش نجيب المسألة');
       });
     }
   }

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../core/network/api_client.dart';
+import '../../core/network/api_error.dart';
 import '../../core/network/api_endpoints.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
 import '../../widgets/buttons.dart';
 import '../../widgets/glass_card.dart';
+import '../../widgets/user_avatar.dart';
 import '../../models/models.dart';
 import 'conversation_screen.dart';
 
@@ -61,9 +63,7 @@ class _ChatScreenState extends State<ChatScreen> {
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _error = e.toString().contains('SocketException')
-            ? 'مفيش اتصال بالسيرفر'
-            : e.toString().replaceAll('Exception: ', '');
+        _error = humanError(e, fallback: 'مقدرناش نجيب رسايلك');
       });
     }
   }
@@ -104,7 +104,7 @@ class _ChatScreenState extends State<ChatScreen> {
     } catch (e) {
       if (!mounted) return;
       messenger.showSnackBar(
-        SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+        SnackBar(content: Text(humanError(e))),
       );
     }
   }
@@ -307,7 +307,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     messenger.showSnackBar(
                       SnackBar(
                           content: Text(
-                              e.toString().replaceAll('Exception: ', ''))),
+                              humanError(e))),
                     );
                   }
                 },
@@ -350,39 +350,12 @@ class _ChatScreenState extends State<ChatScreen> {
         onTap: () => _openConversation(conv),
         child: Row(
           children: [
-            Stack(
-              children: [
-                CircleAvatar(
-                  radius: 25,
-                  backgroundColor: c.friendship.withValues(alpha: 0.25),
-                  backgroundImage:
-                      conv.avatar != null ? NetworkImage(conv.avatar!) : null,
-                  child: conv.avatar == null
-                      ? Text(
-                          conv.title.isNotEmpty ? conv.title[0] : '؟',
-                          style: TextStyle(
-                            fontSize: 18.5,
-                            fontWeight: FontWeight.w600,
-                            color: c.text,
-                          ),
-                        )
-                      : null,
-                ),
-                if (conv.isOnline)
-                  Positioned(
-                    right: 0,
-                    bottom: 0,
-                    child: Container(
-                      width: 14,
-                      height: 14,
-                      decoration: BoxDecoration(
-                        color: c.primary,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: c.background, width: 2),
-                      ),
-                    ),
-                  ),
-              ],
+            UserAvatar(
+              imageUrl: conv.avatar,
+              name: conv.title,
+              radius: 25,
+              isOnline: conv.isOnline,
+              background: c.friendship.withValues(alpha: 0.25),
             ),
             const SizedBox(width: AppTheme.spaceMd),
             Expanded(

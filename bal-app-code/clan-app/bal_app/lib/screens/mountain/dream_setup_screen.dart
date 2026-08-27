@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/network/api_client.dart';
+import '../../core/network/api_error.dart';
 import '../../core/network/api_endpoints.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
@@ -56,7 +57,7 @@ class _DreamSetupScreenState extends State<DreamSetupScreen> {
     } catch (e) {
       setState(() {
         _loading = false;
-        _error = e.toString().replaceAll('Exception: ', '');
+        _error = humanError(e, fallback: 'الرفيق مش متاح دلوقتي');
       });
     }
   }
@@ -85,7 +86,7 @@ class _DreamSetupScreenState extends State<DreamSetupScreen> {
     } catch (e) {
       setState(() {
         _loading = false;
-        _error = e.toString().replaceAll('Exception: ', '');
+        _error = humanError(e, fallback: 'الرفيق مش متاح دلوقتي');
       });
     }
   }
@@ -111,7 +112,7 @@ class _DreamSetupScreenState extends State<DreamSetupScreen> {
     } catch (e) {
       setState(() {
         _loading = false;
-        _error = e.toString().replaceAll('Exception: ', '');
+        _error = humanError(e, fallback: 'الرفيق مش متاح دلوقتي');
       });
     }
   }

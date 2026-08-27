@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/checkin/checkin_watcher.dart';
 import '../../core/network/api_client.dart';
+import '../../core/network/api_error.dart';
 import '../../core/network/api_endpoints.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
@@ -51,7 +52,7 @@ class _TasksScreenState extends State<TasksScreen> {
       if (mounted) context.read<CheckInWatcher>().updateTasks(tasks);
     } catch (e) {
       setState(() {
-        _error = e.toString();
+        _error = humanError(e, fallback: 'مقدرناش نجيب مهامك');
         _loading = false;
       });
     }
@@ -78,7 +79,7 @@ class _TasksScreenState extends State<TasksScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('فشل الإنجاز: ${e.toString().replaceAll('Exception: ', '')}')),
+          SnackBar(content: Text('فشل الإنجاز: ${humanError(e)}')),
         );
       }
     }
@@ -402,7 +403,7 @@ class _AddTaskSheetState extends State<_AddTaskSheet> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('فشل: ${e.toString().replaceAll('Exception: ', '')}')),
+          SnackBar(content: Text('فشل: ${humanError(e)}')),
         );
         setState(() => _saving = false);
       }

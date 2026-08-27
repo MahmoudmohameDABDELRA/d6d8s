@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/network/api_client.dart';
+import '../../core/network/api_error.dart';
 import '../../core/network/api_endpoints.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
@@ -469,7 +470,7 @@ class _CreateClanDialogState extends State<_CreateClanDialog> {
         _busy = false;
         _error = e.toString().contains('409')
             ? 'عندك عشيرة خاصة بالفعل — واحدة بس مسموحة'
-            : e.toString().replaceAll('Exception: ', '');
+            : humanError(e);
       });
     }
   }

@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../core/network/api_client.dart';
+import '../../core/network/api_error.dart';
 import '../../core/network/api_endpoints.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
@@ -54,7 +55,7 @@ class _MountainHomeScreenState extends State<MountainHomeScreen> {
       });
     } catch (e) {
       setState(() {
-        _error = e.toString();
+        _error = humanError(e, fallback: 'مقدرناش نجيب أهدافك');
         _loading = false;
       });
     }
@@ -562,7 +563,7 @@ class _StepJourneyScreenState extends State<_StepJourneyScreen> {
       }
     } catch (e) {
       setState(() {
-        _error = e.toString();
+        _error = humanError(e, fallback: 'مقدرناش نجيب أهدافك');
         _loading = false;
       });
     }

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '../../core/network/api_client.dart';
+import '../../core/network/api_error.dart';
 import '../../core/network/api_endpoints.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/models.dart';
 import '../../widgets/glass_card.dart';
+import '../../widgets/user_avatar.dart';
 
 /// 👥 أعضاء العشيرة
 ///
@@ -48,7 +50,7 @@ class _ClanMembersScreenState extends State<ClanMembersScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = e.toString().replaceAll('Exception: ', '');
+        _error = humanError(e);
         _loading = false;
       });
     }
@@ -124,41 +126,11 @@ class _ClanMembersScreenState extends State<ClanMembersScreen> {
         padding: const EdgeInsets.all(AppTheme.spaceMd),
         child: Row(
           children: [
-            Stack(
-              children: [
-                CircleAvatar(
-                  radius: 23,
-                  backgroundColor: c.surface,
-                  backgroundImage: m.profileImage != null
-                      ? NetworkImage(m.profileImage!)
-                      : null,
-                  child: m.profileImage == null
-                      ? Text(
-                          m.username.isNotEmpty ? m.username[0] : '؟',
-                          style: TextStyle(
-                            fontSize: 18.5,
-                            fontWeight: FontWeight.w600,
-                            color: c.text,
-                          ),
-                        )
-                      : null,
-                ),
-                /// نقطة خضرا = موجود دلوقتي
-                if (m.isOnline)
-                  Positioned(
-                    right: 0,
-                    bottom: 0,
-                    child: Container(
-                      width: 14,
-                      height: 14,
-                      decoration: BoxDecoration(
-                        color: c.primary,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: c.background, width: 2),
-                      ),
-                    ),
-                  ),
-              ],
+            UserAvatar(
+              imageUrl: m.profileImage,
+              name: m.username,
+              radius: 23,
+              isOnline: m.isOnline,
             ),
             const SizedBox(width: AppTheme.spaceMd),
             Expanded(
