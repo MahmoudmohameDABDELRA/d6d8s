@@ -1,49 +1,63 @@
-# 📁 هيكل مجلدات مساحة العمل — d6d8s
+# 📁 هيكل المشروع — بال
 
-> تم التوليد من الهيكل الفعلي للمستودع (الفرع: `arena/01a000e4-d6d8s`)
+> مولّد من الحالة الفعلية للمستودع (الفرع `arena/01a000e4-d6d8s`)
 
 ```
 .
-|-- bal-app-code
-|   `-- clan-app
-|       |-- backups
-|       |-- bal_app
-|       |-- deploy
-|       |-- docs
-|       |-- mobile-alarm
-|       |-- prisma
-|       |-- scripts
-|       |-- src
-|       |-- test
-|       |-- web
-|       |-- .dockerignore
-|       |-- .env
-|       |-- .env.example
-|       |-- .gitignore
-|       |-- Dockerfile
-|       |-- docker-compose.yml
-|       |-- loadtest.mjs
-|       |-- mem-test.mjs
-|       |-- package-lock.json
-|       |-- package.json
-|       `-- scale-test.mjs
-|-- files
-|   `-- focus_app
-|       |-- functions
-|       |-- lib
-|       |-- README.md
-|       `-- pubspec.yaml
-|-- .gitignore
-|-- PROJECT-REVIEW.md
-|-- README.md
-`-- STRUCTURE.md
-
-17 directories, 17 files
+├── bal-app-code/clan-app/          المشروع الرئيسي
+│   ├── bal_app/                    📱 تطبيق Flutter — الفرونت إند الرسمي
+│   │   └── lib/
+│   │       ├── core/
+│   │       │   ├── checkin/        ⏰ مراقب مواعيد المهام (البوب-أب)
+│   │       │   ├── network/        الـ API + ترجمة الأخطاء
+│   │       │   ├── storage/        التوكن والتفضيلات
+│   │       │   └── theme/          الألوان والمسافات والحركة
+│   │       ├── models/             نماذج البيانات
+│   │       ├── screens/            14 شاشة
+│   │       │   ├── alarm/          المنبهات + مهمة الصحيان
+│   │       │   ├── auth/           الدخول والاهتمامات
+│   │       │   ├── chat/           الرسائل + المحادثة
+│   │       │   ├── clans/          العشائر + الأعضاء
+│   │       │   ├── focus/          التركيز + غرفة التحدي
+│   │       │   ├── mountain/       الجبل + إعداد الحلم
+│   │       │   ├── profile/        البروفايل
+│   │       │   └── tasks/          المهام
+│   │       ├── shell/              الناف بار والتنقل
+│   │       └── widgets/            9 ودجت مشتركة
+│   │
+│   ├── src/                        ⚙️ السيرفر (Node.js + Express)
+│   │   ├── config/                 البيئة · القاعدة · Redis · اللوج
+│   │   ├── middlewares/            المصادقة · الأخطاء · الحدود
+│   │   ├── modules/                21 وحدة (نقاط الـ API)
+│   │   ├── queues/                 BullMQ — الجوبس الخلفية
+│   │   ├── services/               40 خدمة (المنطق + الـ AI)
+│   │   ├── sockets/                البث اللحظي والألعاب
+│   │   └── utils/                  أدوات مشتركة
+│   │
+│   ├── prisma/                     🗄️ 64 جدول + migrations
+│   ├── test/                       🧪 73 ملف اختبار
+│   ├── scripts/                    أدوات (db:setup · تكبير الواجهة)
+│   ├── docs/                       📖 وثائق الرؤية
+│   ├── mobile-alarm/               كود أندرويد أصلي للمنبه (Kotlin)
+│   ├── deploy/                     إعدادات النشر
+│   ├── docker-compose.dev.yml      التطوير المحلي (postgres + redis)
+│   └── docker-compose.yml          الإنتاج (+ pgbouncer + العمّال)
+│
+└── files/focus_app/                📱 تطبيق تركيز منفصل (موصول بالسيرفر)
 ```
 
-## 📦 ملخص المشاريع
+## 🔗 الترابط
 
-| المسار | المشروع | التقنيات |
+| من | إلى | إزاي |
 |---|---|---|
-| `bal-app-code/clan-app` | تطبيق شامل (Backend + Flutter + Web) | Node.js, Express, Prisma, Flutter, React, Vite, TS |
-| `files/focus_app` | جلسة تركيز Pomodoro — موصولة بـ clan-app | Flutter, Dart |
+| `bal_app` | السيرفر | REST + JWT · Socket.io للبث |
+| `focus_app` | السيرفر | `POST /api/task-checkin` بـ app-secret |
+| العامل (worker) | السيرفر | Redis Pub/Sub — يوصّل البوب-أب للمستخدم |
+
+## 📚 وثائق تانية
+
+| الملف | فيه إيه |
+|---|---|
+| `README.md` | نظرة عامة والتشغيل |
+| `CHECKIN-FLOW.md` | حلقة الاطمئنان + عقد الـ API |
+| `PROJECT-REVIEW.md` | مراجعة المشروع |

@@ -89,8 +89,9 @@ app.use(express.urlencoded({ extended: true, limit: '100kb' }));
 //  cookieParser قبل الراوترات التي تقرأ req.cookies
 app.use(cookieParser());
 
-// ⚠️ الفرونت إند الرسمي هو تطبيق Flutter (clan_flutter_app/) — لا يوجد ويب يُخدم من الباك إند.
-// أُزيل express.static للـ public/ القديم: لا فرونت ويب موازٍ يعمل بعد الآن.
+// ️ الفرونت إند الرسمي هو تطبيق Flutter (bal_app/).
+//    نسخة الويب منه تُخدم في آخر الملف لو كانت مبنية — مفيش
+//    فرونت ويب موازٍ (كان فيه قالب Vite فاضي واتشال).
 
 // فحص الصحة قبل الـ rate limiter حتى لا تستهلكه أدوات المراقبة
 app.get('/api/status', (req, res) => {
@@ -244,10 +245,15 @@ app.use('/api/social', socialRoutes);
 app.use('/api', checkinRoutes);
 
 // ── الفرونت إند الرسمي: تطبيق Flutter (نسخة ويب) ──
-// يخدم build/web الناتج من clan_flutter_app على نفس نطاق الـ API
+// يخدم build/web الناتج من bal_app على نفس نطاق الـ API
 // (يعمل أيضاً محلياً: node src/server.js ثم افتح http://localhost:3000)
+//
+// ️ كان المسار `../clan_flutter_app/build/web` — مجلد مش موجود
+//    خالص. التطبيق اسمه `bal_app`، يعني `flutter build web` كان
+//    بيبني في مكان والسيرفر بيدوّر في مكان تاني، والنتيجة إن نسخة
+//    الويب عمرها ما كانت هتتخدم مهما بنيتها.
 import fs from 'node:fs';
-const flutterWebDir = path.join(__dirname, '../clan_flutter_app/build/web');
+const flutterWebDir = path.join(__dirname, '../bal_app/build/web');
 if (fs.existsSync(path.join(flutterWebDir, 'index.html'))) {
   app.use(express.static(flutterWebDir));
   // SPA fallback: أي مسار غير /api يروح لـ index.html (توجيه Flutter الداخلي)
