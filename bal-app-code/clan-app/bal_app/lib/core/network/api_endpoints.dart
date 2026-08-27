@@ -142,6 +142,14 @@ abstract final class ApiEndpoints {
   static String notificationRead(String id) => '/notifications/$id/read';
   static const checkinOpen = '/notifications/checkin/open';
 
+  // ── الألعاب (وقت الراحة) ──
+  static const games = '/games';
+  static const gameRooms = '/games/rooms';
+  static const gameRoomJoin = '/games/rooms/join';
+  static String gameRoom(String id) => '/games/rooms/$id';
+  static String gameRoomLeave(String id) => '/games/rooms/$id/leave';
+  static String gameRoomInvite(String id) => '/games/rooms/$id/invite';
+
   // ── الـ AI ──
   static const aiMessage = '/ai/message';
   static const aiConversations = '/ai/conversations';

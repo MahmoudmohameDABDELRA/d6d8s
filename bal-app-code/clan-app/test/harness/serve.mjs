@@ -15,6 +15,15 @@ const { Server } = await import('socket.io');
 const app = (await import('../../src/app.js')).default;
 const registerNotificationSocket = (await import('../../src/sockets/notification.socket.js')).default;
 const registerChatSocket = (await import('../../src/sockets/chat.socket.js')).default;
+/**
+ * ️ قناة اللعبة كانت **ناقصة من الفحص**.
+ *
+ *  `src/server.js` بيسجّل التلاتة (إشعارات + شات + لعبة) لكن
+ *  الـharness كان بيسجّل اتنين بس. النتيجة إن أي فحص للعبة
+ *  كان بيرجع «Invalid namespace» — ومحرّك الـ٦٦٣ سطر ما اتفحصش
+ *  ولا مرة من عميل حقيقي.
+ */
+const registerSnakeGame = (await import('../../src/sockets/snake.game.js')).default;
 
 const server = app.listen(Number(process.env.PORT), '0.0.0.0', () => {
   console.log('HARNESS_UP ' + process.env.PORT);
@@ -24,4 +33,5 @@ const io = new Server(server, { cors: { origin: true, credentials: true } });
 app.set('io', io);
 registerNotificationSocket(io);
 registerChatSocket(io);
+registerSnakeGame(io);
 console.log('SOCKETS_READY');

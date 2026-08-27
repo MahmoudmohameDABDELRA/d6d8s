@@ -5,6 +5,7 @@ import '../screens/mountain/dream_setup_screen.dart';
 import '../screens/focus/focus_setup_screen.dart';
 import '../screens/chat/chat_screen.dart';
 import '../screens/alarm/alarms_screen.dart';
+import '../screens/games/games_screen.dart';
 
 /// ➕ قائمة الإنشاء السريع (Hero FAB)
 Future<void> showCreateMenu(BuildContext context) {
@@ -57,6 +58,19 @@ class _CreateMenuSheet extends StatelessWidget {
         color: c.summitGlow,
         onTap: () => Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => const AlarmsScreen()),
+        ),
+      ),
+
+      /// ️ الألعاب كان ليها محرّك كامل في السيرفر (٦٦٣ سطر:
+      ///    غرف، توثيق، حلقة ٣٠ إطار/ثانية، تصادم، صدارة)
+      ///    و**مفيش أي مدخل ليها في التطبيق**. المحرّك كان
+      ///    شغّال في الفراغ. دي أول باب يوصّله.
+      _MenuItem(
+        icon: Icons.sports_esports_rounded,
+        label: 'ألعاب الراحة',
+        color: c.accent,
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const GamesScreen()),
         ),
       ),
     ];

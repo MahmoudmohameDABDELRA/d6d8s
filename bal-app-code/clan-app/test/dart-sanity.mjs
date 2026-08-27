@@ -148,6 +148,67 @@ for (const file of files) {
 pass += 1; // القسم عدّى
 
 // ════════════════════════════════════════════════
+console.log('3ب) رموز حزم Flutter من مكتبتها الصح');
+
+/**
+ * ️ الفجوة اللي القسم ده بيقفلها:
+ *
+ *  القسم اللي فوق بيفحص الملفات **المحلية** بس. رموز Flutter
+ *  نفسها (`Ticker`, `Timer`, `HapticFeedback`) كانت بتعدّي بلا
+ *  فحص، رغم إن أغلبها **مش** في `material.dart`.
+ *
+ *  ده اتمسك فعلاً: `snake_game_screen.dart` كان بيستخدم `Ticker`
+ *  ومستورد `material.dart` بس — والملف مكانش هيتكومبايل، والفاحص
+ *  كان بيقول ٣٤١/٣٤١ نجح.
+ *
+ *  الرموز دي مش كتيرة، فقايمة صريحة أدق من أي استنتاج.
+ */
+const PACKAGE_SYMBOLS = {
+  Ticker: ['package:flutter/scheduler.dart'],
+  TickerProvider: ['package:flutter/scheduler.dart', 'package:flutter/material.dart'],
+  SchedulerBinding: ['package:flutter/scheduler.dart'],
+  Timer: ['dart:async'],
+  StreamController: ['dart:async'],
+  StreamSubscription: ['dart:async'],
+  Completer: ['dart:async'],
+  unawaited: ['dart:async'],
+  HapticFeedback: ['package:flutter/services.dart', 'package:flutter/material.dart'],
+  SystemChrome: ['package:flutter/services.dart'],
+  Clipboard: ['package:flutter/services.dart', 'package:flutter/material.dart'],
+  TextInputFormatter: ['package:flutter/services.dart'],
+  jsonEncode: ['dart:convert'],
+  jsonDecode: ['dart:convert'],
+  debugPrint: ['package:flutter/foundation.dart', 'package:flutter/material.dart'],
+  kIsWeb: ['package:flutter/foundation.dart'],
+  defaultTargetPlatform: ['package:flutter/foundation.dart'],
+  ChangeNotifier: ['package:flutter/foundation.dart', 'package:flutter/material.dart'],
+};
+
+for (const file of files) {
+  const rel = relative(APP, file);
+  const src = readFileSync(file, 'utf8');
+  const code = strip(src);
+
+  const imports = [...src.matchAll(/import\s+'([^']+)'/g)].map((m) => m[1]);
+
+  for (const [symbol, sources] of Object.entries(PACKAGE_SYMBOLS)) {
+    if (!new RegExp(`\\b${symbol}\\b`).test(code)) continue;
+
+    const covered = sources.some((want) =>
+      imports.some((imp) => imp === want || imp.startsWith(`${want} `)),
+    );
+
+    if (!covered) {
+      fail += 1;
+      console.log(
+        `  ❌ ${rel}: «${symbol}» محتاج ${sources[0]}`,
+      );
+    }
+  }
+}
+pass += 1;
+
+// ════════════════════════════════════════════════
 console.log('4) مفيش TODO/FIXME منسية في الكود الجديد');
 const NEW_FILES = [
   'lib/core/checkin/checkin_watcher.dart',

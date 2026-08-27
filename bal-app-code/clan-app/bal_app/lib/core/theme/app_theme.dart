@@ -201,3 +201,25 @@ abstract final class BalType {
   /// عدّاد الجلسة
   static const double hero = 60;
 }
+
+/// 😀 أحجام الإيموجي — سلّم منفصل عن قصد
+///
+/// ️ ليه مش في `BalType`:
+///
+///    الإيموجي **مش نص**. حجم النص بيتحدد بالمقروئية وتراتب
+///    المعنى؛ حجم الإيموجي بيتحدد بإنه أيقونة — لازم يبان
+///    كصورة. خلطهم في سلّم واحد بيخلي أي تعديل على مقروئية
+///    النص يكبّر الرموز معاه بلا سبب.
+abstract final class BalEmoji {
+  /// جوه كارت في قايمة
+  static const double inline = 26;
+
+  /// أيقونة عنصر
+  static const double item = 28;
+
+  /// رأس كارت الحالة
+  static const double header = 34;
+
+  /// شاشة فاضية أو نهاية لعبة
+  static const double display = 60;
+}
